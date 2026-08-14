@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, type Variants } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
-import { ArrowRight, Bot, ChevronDown, Clock, Droplets, Grid2X2, List, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Trash2, UserRound, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, Clock, Droplets, Grid2X2, List, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Trash2, UserRound, X } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
@@ -49,9 +49,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [chatOpen, setChatOpen] = useState(false)
   const [question, setQuestion] = useState('')
-  const { messages, sendMessage, status } = useChat({
-    messages: [{ id: 'welcome', role: 'assistant', parts: [{ type: 'text', text: '¡Bienvenido! Te puedo ayudar a elegir tu agua mineral.' }] }],
-  })
+  const { messages, sendMessage, status } = useChat()
   const catalog = products.length ? products : fallbackProducts
   const filtered = useMemo(() => catalog.filter((product) => `${product.title} ${product.description} ${product.tags.join(' ')}`.toLowerCase().includes(search.toLowerCase())), [catalog, search])
   const count = cart.reduce((total, item) => total + item.quantity, 0)
@@ -182,10 +180,21 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}><Droplets className="size-7" /></motion.span>
     </motion.button>
     <AnimatePresence>
-      {chatOpen && <motion.section initial={{ opacity: 0, y: 24, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.95 }} transition={{ type: 'spring', stiffness: 320, damping: 26 }} className="fixed bottom-32 right-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden border border-border bg-background shadow-2xl" aria-label="Asistente de manantial">
-        <div className="flex items-center gap-3 bg-primary p-4 text-primary-foreground"><motion.span className="grid size-9 place-items-center rounded-full bg-accent text-accent-foreground" animate={{ rotate: [0, 6, -6, 0] }} transition={{ duration: 2, repeat: Infinity }}><Bot className="size-5" /></motion.span><div><p className="font-medium">Bienvenido</p><p className="text-xs text-primary-foreground/70">Te puedo ayudar</p></div><motion.button onClick={() => setChatOpen(false)} whileHover={{ rotate: 90 }} transition={spring} className="ml-auto" aria-label="Cerrar asistente"><X className="size-4" /></motion.button></div>
-        <div className="flex max-h-64 flex-col gap-3 overflow-y-auto p-4"><AnimatePresence initial={false}>{messages.map((message: { id: string; role: string; parts: Array<{ type: string; text?: string }> }) => <motion.p key={message.id} layout initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 350, damping: 28 }} className={`max-w-[85%] px-3 py-2 text-sm leading-5 ${message.role === 'user' ? 'ml-auto bg-secondary' : 'bg-muted'}`}>{message.parts.filter((part) => part.type === 'text').map((part) => part.type === 'text' ? part.text : '').join('')}</motion.p>)}</AnimatePresence></div>
-        <div className="flex gap-2 border-t border-border p-3"><form onSubmit={askAssistant} className="flex min-w-0 flex-1 gap-2"><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Escribe tu pregunta" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /><motion.button type="submit" whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.85 }} disabled={status === 'streaming' || status === 'submitted'} aria-label="Enviar pregunta" className="grid size-9 place-items-center bg-primary text-primary-foreground disabled:opacity-50"><Send className="size-4" /></motion.button></form></div>
+      {chatOpen && <motion.section initial={{ opacity: 0, y: 32, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 32, scale: 0.92 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="fixed bottom-32 right-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-[2rem] border border-primary/10 bg-background shadow-[0_24px_70px_rgba(8,45,100,.28)]" aria-label="Asistente de manantial">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#1197c5] via-[#0e7fb5] to-primary p-5 pb-7 text-primary-foreground">
+          <motion.span className="pointer-events-none absolute -right-10 -top-12 size-32 rounded-full bg-white/10" animate={{ scale: [1, 1.2, 1], x: [0, -10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }} />
+          <motion.span className="pointer-events-none absolute -bottom-14 left-6 size-28 rounded-full bg-white/5" animate={{ y: [0, 10, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} />
+          <div className="relative flex items-center gap-3">
+            <motion.img src="/elite-logo.jpg" alt="Logo Elite" className="size-12 rounded-full border-2 border-white/50 object-cover shadow-lg" animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.07, 1] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }} />
+            <div className="min-w-0"><motion.p className="font-serif text-xl leading-tight" animate={{ opacity: [1, 0.75, 1] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>Bienvenido</motion.p><p className="text-xs text-primary-foreground/80">Te puedo ayudar a elegir tu agua</p></div>
+            <motion.button onClick={() => setChatOpen(false)} whileHover={{ rotate: 90, scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring} className="ml-auto grid size-9 shrink-0 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-white/25" aria-label="Cerrar asistente"><X className="size-4" /></motion.button>
+          </div>
+          <motion.div initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 320, damping: 24 }} className="relative mt-4 flex justify-start">
+            <p className="max-w-[85%] rounded-[1.6rem] rounded-bl-lg bg-white px-4 py-2.5 text-xs leading-5 text-primary shadow-md">¡Hola! Soy el asistente de Agua Elite. ¿Qué agua buscas hoy?</p>
+          </motion.div>
+        </div>
+        <div className="flex max-h-56 flex-col gap-3 overflow-y-auto p-4"><AnimatePresence initial={false}>{messages.map((message: { id: string; role: string; parts: Array<{ type: string; text?: string }> }) => <motion.p key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 350, damping: 28 }} className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-5 ${message.role === 'user' ? 'ml-auto rounded-[1.2rem] rounded-br-md bg-secondary text-foreground' : 'rounded-[1.2rem] rounded-bl-md border border-border bg-muted'}`}>{message.parts.filter((part) => part.type === 'text').map((part) => part.type === 'text' ? part.text : '').join('')}</motion.p>)}</AnimatePresence></div>
+        <div className="flex gap-2 border-t border-border bg-background p-3"><form onSubmit={askAssistant} className="flex min-w-0 flex-1 gap-2 rounded-full border border-border bg-background py-1 pl-4 pr-1"><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Escribe tu pregunta" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /><motion.button type="submit" whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.85 }} disabled={status === 'streaming' || status === 'submitted'} aria-label="Enviar pregunta" className="grid size-9 shrink-0 place-items-center rounded-full bg-[#1197c5] text-white disabled:opacity-50"><Send className="size-4" /></motion.button></form></div>
       </motion.section>}
     </AnimatePresence>
     <AnimatePresence>
