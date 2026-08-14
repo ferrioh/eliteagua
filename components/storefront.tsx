@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, type Variants } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
-import { ArrowRight, Bot, ChevronDown, Droplets, Grid2X2, List, Mail, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Trash2, UserRound, X } from 'lucide-react'
+import { ArrowRight, Bot, ChevronDown, Clock, Droplets, Grid2X2, List, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Trash2, UserRound, X } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
@@ -29,6 +29,8 @@ const fallbackProducts: ShopifyProduct[] = [
 
 const staggerContainer: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } }
 const cardVariants: Variants = { hidden: { opacity: 0, y: 26 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 24 } } }
+const contactContainer: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.14, delayChildren: 0.15 } } }
+const contactCard: Variants = { hidden: { opacity: 0, y: 28, scale: 0.97 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 24 } } }
 const spring = { type: 'spring', stiffness: 300, damping: 22 } as const
 
 export function Storefront({ products, slides: initialSlides, settings }: Props) {
@@ -133,7 +135,29 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       </motion.div>
       {filtered.length === 0 && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center text-muted-foreground">No encontramos ese origen. Prueba otra búsqueda.</motion.p>}
     </section>
-    <motion.section id="origen" className="border-y border-border bg-[#98e5ff] px-5 py-14 pb-28 md:px-10 md:py-20" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}><div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[.7fr_1fr] md:items-end"><div><p className="mb-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">Encuéntranos</p><h2 className="font-serif text-3xl leading-tight md:text-5xl">Agua Elite,<br />cerca de ti.</h2></div><div className="flex flex-col gap-5"><p className="max-w-3xl font-serif text-2xl leading-tight md:text-4xl">Cada botella conserva la historia del lugar donde nace.</p><div className="grid gap-5 border-t border-primary/20 pt-5 text-sm"><div><p className="mb-2 font-semibold text-primary">Ubicación</p><p>Urb. Campo Dowell, Anaco 6003, Anzoátegui, Venezuela</p><iframe title="Mapa de ubicación de Elite" src="https://www.google.com/maps?q=Urb.%20Campo%20Dowell%2C%20Anaco%2C%20Anzo%C3%A1tegui%2C%20Venezuela&output=embed" className="mt-3 h-28 w-full rounded-2xl border-0" loading="lazy" /></div><div id="contacto" className="grid gap-3 border-t border-primary/20 pt-5"><p className="font-semibold text-primary">Contacto</p><motion.a href="mailto:embotelladora.elite@gmail.com" className="flex items-center gap-3" whileHover={{ x: 6, color: '#e30613' }}><Mail className="size-5 text-primary" /> embotelladora.elite@gmail.com</motion.a><motion.a href="https://wa.me/584129412247" className="flex items-center gap-3" whileHover={{ x: 6, color: '#e30613' }}><MessageCircle className="size-5 text-primary" /> +58 412-9412247</motion.a></div></div></div></div></motion.section>
+    <motion.section id="origen" className="border-y border-border bg-[#98e5ff] px-5 py-14 pb-28 md:px-10 md:py-20" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}><div className="mx-auto max-w-7xl">
+      <div className="mb-10 grid gap-6 md:grid-cols-[.7fr_1fr] md:items-end"><div><p className="mb-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">Encuéntranos</p><h2 className="font-serif text-3xl leading-tight md:text-5xl">Agua Elite,<br />cerca de ti.</h2></div><p className="max-w-3xl font-serif text-2xl leading-tight md:text-4xl">Cada botella conserva la historia del lugar donde nace.</p></div>
+      <motion.div id="contacto" variants={contactContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} className="grid gap-5 md:grid-cols-3">
+        <motion.div variants={contactCard} whileHover={{ y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }} className="flex flex-col gap-4 rounded-3xl border border-primary/10 bg-background p-6 shadow-lg shadow-primary/5">
+          <span className="grid size-12 place-items-center rounded-2xl bg-[#1197c5]/10 text-[#1197c5]"><MapPin className="size-6" /></span>
+          <div><p className="font-semibold text-primary">Ubicación</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Urb. Campo Dowell, Anaco 6003,<br />Anzoátegui, Venezuela</p></div>
+          <iframe title="Mapa de ubicación de Elite" src="https://www.google.com/maps?q=Urb.%20Campo%20Dowell%2C%20Anaco%2C%20Anzo%C3%A1tegui%2C%20Venezuela&output=embed" className="mt-auto h-36 w-full rounded-2xl border-0" loading="lazy" />
+        </motion.div>
+        <motion.div variants={contactCard} whileHover={{ y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }} className="flex flex-col gap-4 rounded-3xl border border-primary/10 bg-background p-6 shadow-lg shadow-primary/5">
+          <span className="grid size-12 place-items-center rounded-2xl bg-[#1197c5]/10 text-[#1197c5]"><Mail className="size-6" /></span>
+          <div><p className="font-semibold text-primary">Escríbenos</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Resolvemos tus dudas y pedidos por correo o WhatsApp.</p></div>
+          <div className="mt-auto flex flex-col gap-2.5">
+            <motion.a href="mailto:embotelladora.elite@gmail.com" whileHover={{ x: 6, color: '#e30613' }} className="flex items-center gap-2.5 rounded-2xl bg-secondary px-4 py-3 text-sm font-medium"><Mail className="size-4 shrink-0 text-[#1197c5]" /><span className="truncate">embotelladora.elite@gmail.com</span></motion.a>
+            <motion.a href="https://wa.me/584129412247" whileHover={{ x: 6, color: '#e30613' }} className="flex items-center gap-2.5 rounded-2xl bg-secondary px-4 py-3 text-sm font-medium"><MessageCircle className="size-4 shrink-0 text-[#1197c5]" />+58 412-9412247</motion.a>
+          </div>
+        </motion.div>
+        <motion.div variants={contactCard} whileHover={{ y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }} className="flex flex-col gap-4 rounded-3xl border border-primary/10 bg-background p-6 shadow-lg shadow-primary/5">
+          <span className="grid size-12 place-items-center rounded-2xl bg-[#1197c5]/10 text-[#1197c5]"><Clock className="size-6" /></span>
+          <div><p className="font-semibold text-primary">Horario de atención</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Estamos para atenderte de lunes a sábado.</p></div>
+          <div className="mt-auto grid gap-2 text-sm"><div className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3"><span className="text-muted-foreground">Lunes a viernes</span><strong className="text-primary">8:00 a.m. – 6:00 p.m.</strong></div><div className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3"><span className="text-muted-foreground">Sábados</span><strong className="text-primary">8:00 a.m. – 12:00 m.</strong></div></div>
+        </motion.div>
+      </motion.div>
+    </div></motion.section>
     <footer className="bg-primary px-5 py-10 text-primary-foreground md:px-10"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
       <motion.a href="#inicio" className="flex items-center gap-2 font-serif text-xl font-semibold tracking-tight" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
         <img src="/elite-logo.jpg" alt="Elite" className="size-9 rounded-full object-cover" />
@@ -153,8 +177,8 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <motion.button onClick={() => setCartOpen(true)} whileTap={{ scale: 0.9 }} className="relative flex flex-col items-center gap-1"><ShoppingBag className="size-5" /> Cesta{count > 0 && <AnimatePresence initial={false}><motion.span key={count} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} className="absolute -right-2 -top-1 grid size-4 place-items-center rounded-full bg-[#e30613] text-[9px] text-white">{count}</motion.span></AnimatePresence>}</motion.button>
       <motion.a href="#contacto" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Mail className="size-5" /> Contacto</motion.a>
     </nav>
-    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} animate={{ y: [0, -6, 0] }} transition={{ y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }} className="fixed bottom-24 right-3 z-20 grid size-14 place-items-center rounded-full bg-[#e30613] text-white shadow-xl">
-      <motion.span className="absolute inset-0 rounded-full bg-[#e30613]/40" animate={{ scale: [1, 1.45], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
+    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} animate={{ y: [0, -6, 0] }} transition={{ y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }} className="fixed bottom-24 right-3 z-20 grid size-14 place-items-center rounded-full bg-[#1197c5] text-white shadow-xl">
+      <motion.span className="absolute inset-0 rounded-full bg-[#1197c5]/40" animate={{ scale: [1, 1.45], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
       <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}><Droplets className="size-7" /></motion.span>
     </motion.button>
     <AnimatePresence>

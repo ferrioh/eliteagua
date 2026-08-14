@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Plus, Share2, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Plus, Share2, Trash2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { CustomProductRow } from '@/lib/products'
@@ -21,6 +21,7 @@ export function AdminDashboard({ email }: { email: string }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
   const [slides, setSlides] = useState<SlideRow[]>([])
   const [slideFile, setSlideFile] = useState<File | null>(null)
   const [slidePreview, setSlidePreview] = useState('')
@@ -117,8 +118,8 @@ export function AdminDashboard({ email }: { email: string }) {
         if (uploadError) throw new Error(`No se pudo subir la foto: ${uploadError.message}`)
         imageUrl = supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
       }
-      const response = await fetch('/api/products', {
-        method: 'POST',
+      const response = await fetch(editing ? `/api/products/${editing}` : '/api/products', {
+        method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, price, currency_code: form.currency_code, image_url: imageUrl, tags, product_type: form.product_type }),
       })
@@ -127,7 +128,8 @@ export function AdminDashboard({ email }: { email: string }) {
       setForm(emptyForm)
       setFile(null)
       setPreview('')
-      setStatus({ type: 'success', message: `"${title}" se agregó al catálogo.` })
+      setEditing(null)
+      setStatus({ type: 'success', message: editing ? `"${title}" se actualizó correctamente.` : `"${title}" se agregó al catálogo.` })
       void loadProducts()
     } catch (error) {
       setStatus({ type: 'error', message: error instanceof Error ? error.message : 'Error inesperado.' })
@@ -151,6 +153,31 @@ export function AdminDashboard({ email }: { email: string }) {
     } finally {
       setDeleting(null)
     }
+  }
+
+  function startEdit(product: CustomProductRow) {
+    setEditing(product.id)
+    setForm({
+      title: product.title,
+      description: product.description,
+      price: String(product.price),
+      currency_code: product.currency_code,
+      tags: (product.tags ?? []).join(', '),
+      product_type: product.product_type ?? 'Agua mineral',
+      image_url: product.image_url ?? '',
+    })
+    setFile(null)
+    setPreview('')
+    setStatus(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setForm(emptyForm)
+    setFile(null)
+    setPreview('')
+    setStatus(null)
   }
 
   async function handleLogout() {
@@ -248,8 +275,9 @@ export function AdminDashboard({ email }: { email: string }) {
       <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
         <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
           <div className="mb-6 flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-full bg-secondary text-secondary-foreground"><Plus className="size-5" /></span>
-            <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Nuevo producto</p><h2 className="font-serif text-2xl text-primary">Agregar agua mineral</h2></div>
+            <span className="grid size-10 place-items-center rounded-full bg-secondary text-secondary-foreground">{editing ? <Pencil className="size-5" /> : <Plus className="size-5" />}</span>
+            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">{editing ? 'Editar producto' : 'Nuevo producto'}</p><h2 className="font-serif text-2xl text-primary">{editing ? 'Actualizar agua mineral' : 'Agregar agua mineral'}</h2></div>
+            {editing && <button type="button" onClick={cancelEdit} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive"><X className="size-3.5" /> Cancelar</button>}
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-2 text-sm font-semibold">Nombre del producto<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Ej. Elite 600 ML" className={inputClass} /></label>
@@ -272,7 +300,7 @@ export function AdminDashboard({ email }: { email: string }) {
             <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" /></div>
             <label className="flex flex-col gap-2 text-sm font-semibold">O pega una URL de imagen<small className="font-normal text-muted-foreground">Ej. https://.../elite-600ml.png</small><div className="relative"><Link2 className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={form.image_url} onChange={(event) => { setForm({ ...form, image_url: event.target.value }); setFile(null); setPreview(form.image_url) }} placeholder="https://..." className={`${inputClass} w-full pl-11`} /></div></label>
             {status && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-destructive'}`}>{status.message}</p>}
-            <button disabled={saving} className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-[#e30613] px-5 py-3.5 font-bold text-white disabled:opacity-60"><Upload className="size-4" />{saving ? 'Guardando...' : 'Publicar en el catálogo'}</button>
+            <button disabled={saving} className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-[#e30613] px-5 py-3.5 font-bold text-white disabled:opacity-60"><Upload className="size-4" />{saving ? 'Guardando...' : editing ? 'Actualizar producto' : 'Publicar en el catálogo'}</button>
           </form>
         </section>
         <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
@@ -280,7 +308,7 @@ export function AdminDashboard({ email }: { email: string }) {
             <span className="grid size-10 place-items-center rounded-full bg-secondary text-secondary-foreground"><Package className="size-5" /></span>
             <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Catálogo</p><h2 className="font-serif text-2xl text-primary">Productos actuales</h2></div>
           </div>
-          {products.length === 0 ? <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground"><Package className="size-8 text-muted-foreground/60" />Aún no hay productos. Agrega el primero con el formulario.</div> : <ul className="flex flex-col gap-3">{products.map((product) => <li key={product.id} className="flex items-center gap-4 rounded-xl border border-border bg-background p-3"><div className="size-20 shrink-0 overflow-hidden rounded-lg bg-secondary"><img src={product.image_url || '/placeholder.jpg'} alt={product.title} className="size-full object-cover mix-blend-multiply" /></div><div className="min-w-0 flex-1"><h3 className="truncate font-serif text-lg">{product.title}</h3><p className="line-clamp-2 text-sm text-muted-foreground">{product.description}</p>{product.tags.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1.5">{product.tags.map((tag) => <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>)}</div>}</div><div className="flex shrink-0 flex-col items-end gap-2"><p className="font-bold text-primary">{formatPrice(String(product.price), product.currency_code)}</p><button onClick={() => void handleDelete(product.id)} disabled={deleting === product.id} aria-label={`Eliminar ${product.title}`} className="rounded-full border border-border p-2 text-muted-foreground hover:text-destructive disabled:opacity-50"><Trash2 className="size-4" /></button></div></li>)}</ul>}
+          {products.length === 0 ? <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground"><Package className="size-8 text-muted-foreground/60" />Aún no hay productos. Agrega el primero con el formulario.</div> : <ul className="flex flex-col gap-3">{products.map((product) => <li key={product.id} className="flex items-center gap-4 rounded-xl border border-border bg-background p-3"><div className="size-20 shrink-0 overflow-hidden rounded-lg bg-secondary"><img src={product.image_url || '/placeholder.jpg'} alt={product.title} className="size-full object-cover mix-blend-multiply" /></div><div className="min-w-0 flex-1"><h3 className="truncate font-serif text-lg">{product.title}</h3><p className="line-clamp-2 text-sm text-muted-foreground">{product.description}</p>{product.tags.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1.5">{product.tags.map((tag) => <span key={tag} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{tag}</span>)}</div>}</div><div className="flex shrink-0 flex-col items-end gap-2"><p className="font-bold text-primary">{formatPrice(String(product.price), product.currency_code)}</p><div className="flex items-center gap-1.5"><button onClick={() => startEdit(product)} aria-label={`Editar ${product.title}`} className="rounded-full border border-border p-2 text-muted-foreground hover:text-primary"><Pencil className="size-4" /></button><button onClick={() => void handleDelete(product.id)} disabled={deleting === product.id} aria-label={`Eliminar ${product.title}`} className="rounded-full border border-border p-2 text-muted-foreground hover:text-destructive disabled:opacity-50"><Trash2 className="size-4" /></button></div></div></li>)}</ul>}
         </section>
       </div>
       <section className="mt-8 rounded-2xl bg-background p-6 shadow-sm lg:p-8">
