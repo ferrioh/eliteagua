@@ -3,12 +3,30 @@ __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 
-# Common ignores
-node_modules
+# Dependencias y build
+node_modules/
 .next/
+.next - Copy/
+out/
+dist/
+build/
+
+# Variables de entorno (se configuran en Vercel)
+.env
 .env*.local
-.DS_Store
+.env*.development
+.env*.production
 
 # Archivos sueltos que no forman parte de la página
 API NUEVA
 /route.ts
+
+# Archivos de compilación TypeScript
+*.tsbuildinfo
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+*.rar
+*.zip
