@@ -92,3 +92,29 @@ create policy "Authenticated upload slide images" on storage.objects
 drop policy if exists "Authenticated delete slide images" on storage.objects;
 create policy "Authenticated delete slide images" on storage.objects
   for delete using (bucket_id = 'slide-images' and auth.role() = 'authenticated');
+
+-- 6. Configuración general (redes sociales del pie de página)
+create table if not exists public.settings (
+  id text primary key default 'general',
+  instagram_url text not null default '',
+  facebook_url text not null default '',
+  x_url text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into public.settings (id) values ('general')
+on conflict (id) do nothing;
+
+alter table public.settings enable row level security;
+
+drop policy if exists "Public read settings" on public.settings;
+create policy "Public read settings" on public.settings
+  for select using (true);
+
+drop policy if exists "Authenticated insert settings" on public.settings;
+create policy "Authenticated insert settings" on public.settings
+  for insert with check (auth.role() = 'authenticated');
+
+drop policy if exists "Authenticated update settings" on public.settings;
+create policy "Authenticated update settings" on public.settings
+  for update using (auth.role() = 'authenticated');

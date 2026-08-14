@@ -7,9 +7,20 @@ import { ArrowRight, Bot, ChevronDown, Droplets, Grid2X2, List, Mail, Menu, Mess
 import type { ShopifyProduct } from '@/lib/shopify'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
+import type { SiteSettings } from '@/lib/settings'
 
-type Props = { products: ShopifyProduct[]; slides: string[] }
+type Props = { products: ShopifyProduct[]; slides: string[]; settings: SiteSettings }
 type CartItem = { product: ShopifyProduct; quantity: number }
+
+function InstagramIcon({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
+}
+function FacebookIcon({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
+}
+function XLogoIcon({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" /></svg>
+}
 const fallbackProducts: ShopifyProduct[] = [
   { id: 'elite-600', handle: 'elite-600ml', title: 'Elite 600 ML', description: 'Caja de 16 unidades. Agua mineral Elite en formato práctico para llevar contigo.', productType: 'Agua mineral', tags: ['600 ML', 'Caja 16 unidades'], featuredImage: { url: '/elite-600ml-white.png', altText: 'Caja de agua Elite de 600 mililitros' }, priceRange: { minVariantPrice: { amount: '12.00', currencyCode: 'USD' } }, variants: { nodes: [{ id: 'elite-v600', availableForSale: true }] } },
   { id: 'elite-1500', handle: 'elite-1500ml', title: 'Elite 1.5 L', description: 'Caja de 12 unidades. El formato ideal para compartir en casa o en la oficina.', productType: 'Agua mineral', tags: ['1.5 L', 'Caja 12 unidades'], featuredImage: { url: '/elite-1500ml-white.png', altText: 'Caja de agua Elite de 1.5 litros' }, priceRange: { minVariantPrice: { amount: '15.00', currencyCode: 'USD' } }, variants: { nodes: [{ id: 'elite-v1500', availableForSale: true }] } },
@@ -20,7 +31,7 @@ const staggerContainer: Variants = { hidden: {}, show: { transition: { staggerCh
 const cardVariants: Variants = { hidden: { opacity: 0, y: 26 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 24 } } }
 const spring = { type: 'spring', stiffness: 300, damping: 22 } as const
 
-export function Storefront({ products, slides: initialSlides }: Props) {
+export function Storefront({ products, slides: initialSlides, settings }: Props) {
   const slides = initialSlides.length ? initialSlides : ['/elite-slide.jpg', '/elite-slide-2.png', '/elite-slide-3.png']
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<ShopifyProduct | null>(null)
@@ -123,6 +134,19 @@ export function Storefront({ products, slides: initialSlides }: Props) {
       {filtered.length === 0 && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center text-muted-foreground">No encontramos ese origen. Prueba otra búsqueda.</motion.p>}
     </section>
     <motion.section id="origen" className="border-y border-border bg-[#98e5ff] px-5 py-14 pb-28 md:px-10 md:py-20" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}><div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[.7fr_1fr] md:items-end"><div><p className="mb-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">Encuéntranos</p><h2 className="font-serif text-3xl leading-tight md:text-5xl">Agua Elite,<br />cerca de ti.</h2></div><div className="flex flex-col gap-5"><p className="max-w-3xl font-serif text-2xl leading-tight md:text-4xl">Cada botella conserva la historia del lugar donde nace.</p><div className="grid gap-5 border-t border-primary/20 pt-5 text-sm"><div><p className="mb-2 font-semibold text-primary">Ubicación</p><p>Urb. Campo Dowell, Anaco 6003, Anzoátegui, Venezuela</p><iframe title="Mapa de ubicación de Elite" src="https://www.google.com/maps?q=Urb.%20Campo%20Dowell%2C%20Anaco%2C%20Anzo%C3%A1tegui%2C%20Venezuela&output=embed" className="mt-3 h-28 w-full rounded-2xl border-0" loading="lazy" /></div><div id="contacto" className="grid gap-3 border-t border-primary/20 pt-5"><p className="font-semibold text-primary">Contacto</p><motion.a href="mailto:embotelladora.elite@gmail.com" className="flex items-center gap-3" whileHover={{ x: 6, color: '#e30613' }}><Mail className="size-5 text-primary" /> embotelladora.elite@gmail.com</motion.a><motion.a href="https://wa.me/584129412247" className="flex items-center gap-3" whileHover={{ x: 6, color: '#e30613' }}><MessageCircle className="size-5 text-primary" /> +58 412-9412247</motion.a></div></div></div></div></motion.section>
+    <footer className="bg-primary px-5 py-10 text-primary-foreground md:px-10"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
+      <motion.a href="#inicio" className="flex items-center gap-2 font-serif text-xl font-semibold tracking-tight" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
+        <img src="/elite-logo.jpg" alt="Elite" className="size-9 rounded-full object-cover" />
+        <span>elite</span>
+      </motion.a>
+      <div className="flex items-center gap-3">
+        {[['instagram_url', InstagramIcon, 'Instagram'], ['facebook_url', FacebookIcon, 'Facebook'], ['x_url', XLogoIcon, 'X']].map(([key, Icon, label]) => {
+          const url = settings[key as keyof SiteSettings]
+          return url ? <motion.a key={key as string} href={url} target="_blank" rel="noopener noreferrer" aria-label={label as string} whileHover={{ y: -4, scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring} className="grid size-11 place-items-center rounded-full bg-white/10 transition-colors hover:bg-[#e30613]"><Icon className="size-5" /></motion.a> : <span key={key as string} className="grid size-11 place-items-center rounded-full bg-white/10 text-primary-foreground/30" aria-hidden="true"><Icon className="size-5" /></span>
+        })}
+      </div>
+      <p className="text-xs text-primary-foreground/70">© {new Date().getFullYear()} Agua Elite · Todos los derechos reservados</p>
+    </div></footer>
     <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md items-center justify-around border-t border-border bg-background/95 px-4 py-3 text-[10px] font-semibold text-muted-foreground shadow-[0_-8px_24px_rgba(8,45,100,.08)] backdrop-blur md:hidden" aria-label="Navegación principal">
       <motion.a href="#inicio" className="flex flex-col items-center gap-1 text-primary" whileTap={{ scale: 0.9 }}><Droplets className="size-5" /> Inicio</motion.a>
       <motion.a href="#catalogo" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Grid2X2 className="size-5" /> Tienda</motion.a>

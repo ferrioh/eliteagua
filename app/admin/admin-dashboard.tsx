@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Plus, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Plus, Share2, Trash2, Upload } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { CustomProductRow } from '@/lib/products'
 import type { SlideRow } from '@/lib/slides'
+import type { SiteSettings } from '@/lib/settings'
 
 const emptyForm = { title: '', description: '', price: '', currency_code: 'USD', tags: '', product_type: 'Agua mineral', image_url: '' }
 const inputClass = 'rounded-xl border border-border bg-background px-4 py-3 outline-none ring-primary focus:ring-2'
@@ -26,6 +27,9 @@ export function AdminDashboard({ email }: { email: string }) {
   const [addingSlide, setAddingSlide] = useState(false)
   const [movingSlide, setMovingSlide] = useState<string | null>(null)
   const [deletingSlide, setDeletingSlide] = useState<string | null>(null)
+  const [social, setSocial] = useState<SiteSettings>({ instagram_url: '', facebook_url: '', x_url: '' })
+  const [savingSocial, setSavingSocial] = useState(false)
+  const [socialStatus, setSocialStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const loadProducts = useCallback(async () => {
     try {
@@ -50,6 +54,38 @@ export function AdminDashboard({ email }: { email: string }) {
   }, [])
 
   useEffect(() => { void loadSlides() }, [loadSlides])
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/settings')
+      const json = await response.json()
+      setSocial({ instagram_url: json.settings?.instagram_url ?? '', facebook_url: json.settings?.facebook_url ?? '', x_url: json.settings?.x_url ?? '' })
+    } catch {
+      setSocial({ instagram_url: '', facebook_url: '', x_url: '' })
+    }
+  }, [])
+
+  useEffect(() => { void loadSettings() }, [loadSettings])
+
+  async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingSocial(true)
+    setSocialStatus(null)
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(social),
+      })
+      const json = await response.json()
+      if (!response.ok) throw new Error(json.error ?? 'No se pudieron guardar las redes sociales.')
+      setSocialStatus({ type: 'success', message: 'Redes sociales actualizadas. Revisa el pie de la página.' })
+    } catch (error) {
+      setSocialStatus({ type: 'error', message: error instanceof Error ? error.message : 'Error inesperado.' })
+    } finally {
+      setSavingSocial(false)
+    }
+  }
 
   function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0]
@@ -260,6 +296,21 @@ export function AdminDashboard({ email }: { email: string }) {
             {slidePreview ? <><img src={slidePreview} alt="Vista previa del slide" className="aspect-[16/9] w-full rounded-lg object-cover" /><button onClick={() => void addSlide()} disabled={addingSlide} className="w-full rounded-full bg-[#e30613] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{addingSlide ? 'Subiendo...' : 'Subir al slider'}</button><button onClick={() => { setSlideFile(null); setSlidePreview('') }} className="text-xs text-muted-foreground underline">Cancelar</button></> : <><label className="cursor-pointer text-xs font-semibold text-primary underline">Elegir archivo<input type="file" accept="image/*" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) { setSlideFile(selected); setSlidePreview(URL.createObjectURL(selected)) } }} className="hidden" /></label><p className="text-xs text-muted-foreground">Recomendado: formato ancho (1920×1080 o similar)</p></>}
           </div>
         </div>
+      </section>
+      <section className="mt-8 rounded-2xl bg-background p-6 shadow-sm lg:p-8">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-full bg-secondary text-secondary-foreground"><Share2 className="size-5" /></span>
+          <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Pie de página</p><h2 className="font-serif text-2xl text-primary">Redes sociales</h2><p className="mt-1 text-sm text-muted-foreground">Los enlaces se muestran como iconos en el pie de la página. Deja vacío lo que no quieras mostrar.</p></div>
+        </div>
+        <form onSubmit={saveSettings} className="flex flex-col gap-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="flex flex-col gap-2 text-sm font-semibold">Instagram<input value={social.instagram_url} onChange={(event) => setSocial({ ...social, instagram_url: event.target.value })} placeholder="https://instagram.com/elite" className={inputClass} /></label>
+            <label className="flex flex-col gap-2 text-sm font-semibold">Facebook<input value={social.facebook_url} onChange={(event) => setSocial({ ...social, facebook_url: event.target.value })} placeholder="https://facebook.com/elite" className={inputClass} /></label>
+            <label className="flex flex-col gap-2 text-sm font-semibold">X (Twitter)<input value={social.x_url} onChange={(event) => setSocial({ ...social, x_url: event.target.value })} placeholder="https://x.com/elite" className={inputClass} /></label>
+          </div>
+          {socialStatus && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${socialStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-destructive'}`}>{socialStatus.message}</p>}
+          <button disabled={savingSocial} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#e30613] px-5 py-3 text-sm font-bold text-white disabled:opacity-60"><Share2 className="size-4" />{savingSocial ? 'Guardando...' : 'Guardar enlaces'}</button>
+        </form>
       </section>
     </div>
   </main>
