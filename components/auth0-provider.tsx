@@ -5,9 +5,9 @@ import { Auth0Provider, Auth0Context, initialContext, type Auth0ContextInterface
 
 const guestContext = {
   ...initialContext,
-  isAuthenticated: true,
+  isAuthenticated: false,
   isLoading: false,
-  user: { name: 'Cliente Invitado', email: 'cliente@elite.com', sub: 'mock-sub' },
+  user: undefined,
 } as unknown as Auth0ContextInterface
 
 export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {

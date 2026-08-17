@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Phone, Plus, Share2, Trash2, Upload, UserRound, Users, X } from 'lucide-react'
+import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Plus, Share2, Trash2, Upload, UserRound, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { CustomProductRow } from '@/lib/products'
@@ -11,6 +11,7 @@ import type { SlideRow } from '@/lib/slides'
 import type { SiteSettings } from '@/lib/settings'
 import { AnalyticsPanel } from './analytics-panel'
 import { UsersPanel } from './users-panel'
+import { processImageForUpload } from '@/lib/image-process'
 
 type OrderRow = {
   id: string
@@ -31,7 +32,7 @@ const inputClass = 'rounded-xl border border-border bg-background px-4 py-3 outl
 
 export function AdminDashboard({ email }: { email: string }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'catalog' | 'clients' | 'users' | 'analytics' | 'slides' | 'settings'>('catalog')
+  const [activeTab, setActiveTab] = useState<'catalog' | 'users' | 'analytics' | 'slides' | 'settings'>('catalog')
   const [products, setProducts] = useState<CustomProductRow[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [profiles, setProfiles] = useState<Array<{ id: string; created_at: string }>>([])
@@ -224,9 +225,17 @@ export function AdminDashboard({ email }: { email: string }) {
     try {
       const supabase = createClient()
       if (!supabase) throw new Error('Supabase no está configurado.')
-      const extension = slideFile.name.split('.').pop() || 'png'
+      let uploadFile = slideFile
+      let extension = slideFile.name.split('.').pop() || 'png'
+      try {
+        const processed = await processImageForUpload(slideFile, 1920, 0.85)
+        uploadFile = new File([processed.blob], processed.fileName, { type: 'image/webp' })
+        extension = 'webp'
+      } catch (processingError) {
+        console.warn('Procesamiento de imagen omitido, se usa el archivo original.', processingError)
+      }
       const path = `slides/${crypto.randomUUID()}.${extension}`
-      const { error: uploadError } = await supabase.storage.from('slide-images').upload(path, slideFile)
+      const { error: uploadError } = await supabase.storage.from('slide-images').upload(path, uploadFile)
       if (uploadError) throw new Error(`No se pudo subir la imagen: ${uploadError.message}`)
       const imageUrl = supabase.storage.from('slide-images').getPublicUrl(path).data.publicUrl
       const response = await fetch('/api/slides', {
@@ -238,7 +247,7 @@ export function AdminDashboard({ email }: { email: string }) {
       if (!response.ok) throw new Error(json.error ?? 'No se pudo agregar la imagen.')
       setSlideFile(null)
       setSlidePreview('')
-      setStatus({ type: 'success', message: 'Imagen agregada al slider del inicio.' })
+      setStatus({ type: 'success', message: 'Imagen optimizada y agregada al slider del inicio.' })
       void loadSlides()
     } catch (error) {
       setStatus({ type: 'error', message: error instanceof Error ? error.message : 'Error inesperado.' })
@@ -303,7 +312,6 @@ export function AdminDashboard({ email }: { email: string }) {
         {(
           [
             ['catalog', 'Catálogo de Productos', Package],
-            ['clients', `Clientes (${orders.length || 12})`, Users],
             ['users', `Usuarios (${profiles.length})`, UserRound],
             ['analytics', 'Ventas & Análisis', BarChart3],
             ['slides', 'Slider Inicio', Images],
@@ -366,90 +374,6 @@ export function AdminDashboard({ email }: { email: string }) {
         </div>
       )}
 
-      {/* TAB 2: CLIENTS (Enumerated list with full contact info & quick actions) */}
-      {activeTab === 'clients' && (
-        <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-full bg-[#1197c5]/10 text-[#1197c5]"><Users className="size-5" /></span>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Supabase · Clientes y Compras</p>
-                <h2 className="font-serif text-2xl text-primary">Listado detallado para contacto</h2>
-              </div>
-            </div>
-            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">{orders.length} registros</span>
-          </div>
-
-          {orders.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-16 text-center">
-              <Users className="size-10 text-muted-foreground/60" />
-              <p className="font-serif text-xl">No hay clientes registrados en Supabase todavía.</p>
-              <p className="max-w-md text-sm text-muted-foreground">Cuando los clientes completen una compra utilizando Auth0, sus datos aparecerán aquí numerados con opciones de contacto directo.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="p-3">#</th>
-                    <th className="p-3">Cliente</th>
-                    <th className="p-3">Ubicación / Cédula</th>
-                    <th className="p-3">Contacto</th>
-                    <th className="p-3">Pedido</th>
-                    <th className="p-3">Acciones rápidas</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border text-sm">
-                  {orders.map((order, index) => (
-                    <tr key={order.id} className="hover:bg-secondary/40 transition-colors">
-                      <td className="p-3 font-bold text-[#1197c5]">#{index + 1}</td>
-                      <td className="p-3">
-                        <p className="font-bold text-primary">{order.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">{order.auth0_user_email || 'Auth0 Authenticated'}</p>
-                      </td>
-                      <td className="p-3">
-                        <p className="font-medium">{order.customer_city || 'No especificada'}</p>
-                        <p className="text-xs text-muted-foreground">Cédula: {order.customer_id_number || 'N/D'}</p>
-                      </td>
-                      <td className="p-3">
-                        <p className="font-semibold text-emerald-600">{order.customer_phone}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                      </td>
-                      <td className="p-3">
-                        <span className="font-bold">{order.quantity} aguas</span>
-                        <p className="text-xs text-muted-foreground">{formatPrice(String(order.total_price), order.currency)}</p>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`https://wa.me/${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${order.customer_name}, te escribimos desde Agua Elite en relación a tu pedido de ${order.quantity} aguas.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-full bg-[#25d366] px-3 py-1.5 text-xs font-bold text-white shadow hover:opacity-90"
-                            title="Contactar por WhatsApp"
-                          >
-                            <Phone className="size-3.5" /> WhatsApp
-                          </a>
-                          {order.auth0_user_email && (
-                            <a
-                              href={`mailto:${order.auth0_user_email}?subject=Tu pedido en Agua Elite`}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary"
-                              title="Enviar correo"
-                            >
-                              Email
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
-
       {/* TAB USERS: Usuarios con cuenta Gmail */}
       {activeTab === 'users' && <UsersPanel />}
 
@@ -468,7 +392,7 @@ export function AdminDashboard({ email }: { email: string }) {
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-background p-6 text-center">
               <ImagePlus className="size-8 text-primary" />
               <div className="text-sm font-semibold">Agregar imagen</div>
-              {slidePreview ? <><img src={slidePreview} alt="Vista previa del slide" className="aspect-[16/9] w-full rounded-lg object-cover" /><button onClick={() => void addSlide()} disabled={addingSlide} className="w-full rounded-full bg-[#e30613] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{addingSlide ? 'Subiendo...' : 'Subir al slider'}</button><button onClick={() => { setSlideFile(null); setSlidePreview('') }} className="text-xs text-muted-foreground underline">Cancelar</button></> : <><label className="cursor-pointer text-xs font-semibold text-primary underline">Elegir archivo<input type="file" accept="image/*" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) { setSlideFile(selected); setSlidePreview(URL.createObjectURL(selected)) } }} className="hidden" /></label><p className="text-xs text-muted-foreground">Recomendado: formato ancho (1920×1080 o similar)</p></>}
+              {slidePreview ? <><img src={slidePreview} alt="Vista previa del slide" className="aspect-[16/9] w-full rounded-lg object-cover" /><button onClick={() => void addSlide()} disabled={addingSlide} className="w-full rounded-full bg-[#e30613] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{addingSlide ? 'Subiendo...' : 'Subir al slider'}</button><button onClick={() => { setSlideFile(null); setSlidePreview('') }} className="text-xs text-muted-foreground underline">Cancelar</button></> : <><label className="cursor-pointer text-xs font-semibold text-primary underline">Elegir archivo<input type="file" accept="image/*" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) { setSlideFile(selected); setSlidePreview(URL.createObjectURL(selected)) } }} className="hidden" /></label><p className="text-xs text-muted-foreground">Se redimensiona y optimiza automáticamente (máx. 1920px, WebP). Recomendado: formato ancho (1920×1080 o similar)</p></>}
             </div>
           </div>
         </section>

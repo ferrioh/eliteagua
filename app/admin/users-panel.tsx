@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { AtSign, Building2, Fingerprint, Mail, MapPin, Phone, UserRound, Users } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { AtSign, Building2, ChevronDown, Fingerprint, Mail, MapPin, Phone, UserRound, Users } from 'lucide-react'
 
 type ProfileRow = {
   id: string
@@ -19,6 +20,7 @@ type ProfileRow = {
 export function UsersPanel() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const loadProfiles = useCallback(() => {
     fetch('/api/profile')
@@ -38,7 +40,7 @@ export function UsersPanel() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Supabase · Usuarios con cuenta Gmail</p>
             <h2 className="font-serif text-2xl text-primary">Información de usuarios registrados</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Perfiles creados cuando un cliente inicia sesión con su cuenta de Google/Gmail y completa sus datos.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Perfiles creados cuando un cliente inicia sesión con su cuenta de Google/Gmail y completa sus datos. Toca cada usuario para desplegar su información.</p>
           </div>
         </div>
         <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">{profiles.length} usuarios</span>
@@ -53,26 +55,42 @@ export function UsersPanel() {
           <p className="max-w-md text-sm text-muted-foreground">Cuando un cliente inicie sesión con su correo de Gmail y guarde su información, aparecerá aquí.</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {profiles.map((profile) => (
-            <article key={profile.id} className="rounded-xl border border-border bg-background p-4">
-              <div className="mb-3 flex items-center gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#1197c5] to-[#0e7fb5] text-white"><UserRound className="size-5" /></span>
-                <div className="min-w-0">
-                  <h3 className="truncate font-bold text-primary">{profile.full_name || 'Sin nombre'}</h3>
-                  <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><Mail className="size-3 shrink-0" /> {profile.email || 'Sin correo'}</p>
-                </div>
-              </div>
-              <div className="grid gap-2 text-xs text-muted-foreground">
-                {profile.phone && <p className="flex items-center gap-2"><Phone className="size-3.5 shrink-0 text-emerald-600" /> {profile.phone}</p>}
-                {profile.city && <p className="flex items-center gap-2"><MapPin className="size-3.5 shrink-0 text-[#1197c5]" /> {profile.city}</p>}
-                {profile.address && <p className="flex items-center gap-2"><Building2 className="size-3.5 shrink-0 text-[#1197c5]" /> {profile.address}</p>}
-                {profile.id_number && <p className="flex items-center gap-2"><Fingerprint className="size-3.5 shrink-0 text-[#1197c5]" /> Cédula: {profile.id_number}</p>}
-                {profile.auth0_user_id && <p className="flex items-center gap-2 truncate"><AtSign className="size-3.5 shrink-0 text-muted-foreground/60" /> <span className="truncate" title={profile.auth0_user_id}>{profile.auth0_user_id}</span></p>}
-              </div>
-              <p className="mt-3 border-t border-border pt-2 text-[11px] text-muted-foreground">Registrado: {new Date(profile.created_at).toLocaleDateString('es-VE')} · Actualizado: {new Date(profile.updated_at).toLocaleDateString('es-VE')}</p>
-            </article>
-          ))}
+        <div className="flex flex-col gap-2.5">
+          {profiles.map((profile, index) => {
+            const isOpen = openId === profile.id
+            return (
+              <motion.div key={profile.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} className="overflow-hidden rounded-xl border border-border bg-background">
+                <button
+                  onClick={() => setOpenId(isOpen ? null : profile.id)}
+                  className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-secondary/40"
+                  aria-expanded={isOpen}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#1197c5] to-[#0e7fb5] text-xs font-bold text-white">#{index + 1}</span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground"><UserRound className="size-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold text-primary">{profile.full_name || 'Sin nombre'}</span>
+                    <span className="flex items-center gap-1 truncate text-xs text-muted-foreground"><Mail className="size-3 shrink-0" /> {profile.email || 'Sin correo'}</span>
+                  </span>
+                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">Registrado {new Date(profile.created_at).toLocaleDateString('es-VE')}</span>
+                  <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground"><ChevronDown className="size-4" /></motion.span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: 'easeInOut' }}>
+                      <div className="grid gap-2 border-t border-border px-4 py-4 text-sm text-muted-foreground sm:grid-cols-2">
+                        {profile.phone && <p className="flex items-center gap-2"><Phone className="size-3.5 shrink-0 text-emerald-600" /> {profile.phone}</p>}
+                        {profile.city && <p className="flex items-center gap-2"><MapPin className="size-3.5 shrink-0 text-[#1197c5]" /> {profile.city}</p>}
+                        {profile.address && <p className="flex items-center gap-2"><Building2 className="size-3.5 shrink-0 text-[#1197c5]" /> {profile.address}</p>}
+                        {profile.id_number && <p className="flex items-center gap-2"><Fingerprint className="size-3.5 shrink-0 text-[#1197c5]" /> Cédula: {profile.id_number}</p>}
+                        {profile.auth0_user_id && <p className="flex items-center gap-2 truncate"><AtSign className="size-3.5 shrink-0 text-muted-foreground/60" /> <span className="truncate" title={profile.auth0_user_id}>{profile.auth0_user_id}</span></p>}
+                        <p className="flex items-center gap-2 sm:col-span-2"><Mail className="size-3.5 shrink-0 text-muted-foreground/60" /> Actualizado: {new Date(profile.updated_at).toLocaleDateString('es-VE')}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )
+          })}
         </div>
       )}
     </section>

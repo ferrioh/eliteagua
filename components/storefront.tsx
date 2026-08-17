@@ -295,12 +295,38 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <motion.div className="flex h-full cursor-grab active:cursor-grabbing" animate={{ x: `${-slide * 100}%` }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} drag="x" dragElastic={0.12} onDragEnd={(_event, info) => { if (info.offset.x < -60) setSlide((value) => (value + 1) % slides.length); else if (info.offset.x > 60) setSlide((value) => (value - 1 + slides.length) % slides.length) }}>
         {slides.map((url, index) => <div key={index} className="relative h-full w-full shrink-0 overflow-hidden"><img src={url} alt={`Slide ${index + 1}`} draggable={false} className="size-full object-cover object-center" /><div className="pointer-events-none absolute inset-0 bg-primary/10" /></div>)}
       </motion.div>
-      <div className="absolute inset-x-0 top-0 z-20 flex gap-1.5 p-3 sm:inset-x-6 sm:p-5" role="tablist" aria-label="Progreso de las diapositivas">{slides.map((_, index) => <button key={index} role="tab" aria-selected={slide === index} aria-label={`Ir al slide ${index + 1}`} onClick={() => setSlide(index)} className="group h-1 flex-1 cursor-pointer overflow-hidden rounded-full bg-white/30 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)] backdrop-blur-md transition-all hover:bg-white/50">
-        <motion.span key={slide === index ? 'filling' : 'static'} className="block h-full rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]" initial={{ width: '0%' }} animate={{ width: slide === index ? '100%' : slide > index ? '100%' : '0%' }} transition={slide === index ? { duration: 4, ease: 'linear' } : { duration: 0.25, ease: 'easeOut' }} />
-      </button>)}</div>
-      <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/50 bg-white/25 px-6 py-2.5 text-white shadow-lg backdrop-blur-md sm:bottom-8">
-        <span className="block text-center text-xl font-bold tracking-[0.2em] tabular-nums sm:text-2xl">{String(slide + 1).padStart(2, '0')} <span className="mx-1 font-light text-white/60">/</span> {String(slides.length).padStart(2, '0')}</span>
+
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 p-3 sm:inset-x-6 sm:p-5">
+        <div className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl border border-white/25 bg-white/15 px-3 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
+          <motion.span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e30613] text-white shadow" animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}><Sparkles className="size-3.5" /></motion.span>
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">Nuevos</span>
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            <motion.div className="flex w-max items-center gap-4" animate={reduce ? undefined : { x: ['0%', '-50%'] }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}>
+              {[...catalog, ...catalog].map((product, i) => (
+                <a key={`${product.id}-${i}`} href="#catalogo" className="flex shrink-0 items-center gap-2 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm transition-colors hover:bg-white">
+                  <img src={product.featuredImage?.url || '/placeholder.jpg'} alt="" className="size-4 rounded-full object-cover mix-blend-multiply" />
+                  <span className="whitespace-nowrap">{product.title}</span>
+                  <span className="whitespace-nowrap text-[#e30613]">{formatPrice(product.priceRange.minVariantPrice.amount, product.priceRange.minVariantPrice.currencyCode)}</span>
+                </a>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+        <div className="pointer-events-auto hidden shrink-0 items-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-4 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl sm:flex" role="tablist" aria-label="Progreso de las diapositivas">
+          {slides.map((_, index) => <button key={index} role="tab" aria-selected={slide === index} aria-label={`Ir al slide ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${slide === index ? 'w-8 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />)}
+        </div>
       </div>
+
+      <motion.div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-white/40 bg-white/20 px-4 py-2 shadow-lg shadow-[#0a4566]/15 backdrop-blur-xl sm:bottom-8 sm:gap-4 sm:px-5" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 22 }}>
+        <span className="block text-center text-xl font-bold tracking-[0.2em] tabular-nums sm:text-2xl">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={slide} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 26 }} className="inline-block">{String(slide + 1).padStart(2, '0')}</motion.span>
+          </AnimatePresence>
+          <span className="mx-1.5 font-light text-white/60">/</span>{String(slides.length).padStart(2, '0')}
+        </span>
+        <span className="h-5 w-px bg-white/40" />
+        <span className="flex gap-1.5">{slides.map((_, index) => <motion.span key={index} animate={{ scale: slide === index ? 1.35 : 1, opacity: slide === index ? 1 : 0.45 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }} className={`size-1.5 rounded-full ${slide === index ? 'bg-white' : 'bg-white/70'}`} />)}</span>
+      </motion.div>
     </div></section>
     <section id="catalogo" className="relative mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-20">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
@@ -464,7 +490,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     <AnimatePresence>
       {orderOpen && <motion.div role="dialog" aria-modal="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-end justify-center bg-primary/40 p-4 md:items-center" onClick={() => setOrderOpen(false)}>
         <motion.form onSubmit={submitOrderAndWhatsApp} initial={{ scale: 0.9, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 24 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="w-full max-w-md rounded-3xl bg-background p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-          <div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Pedido Autenticado (Auth0)</p><h2 className="text-2xl font-extrabold text-primary">Completa tus datos</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setOrderOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
+          <div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Pedido con tu cuenta</p><h2 className="text-2xl font-extrabold text-primary">Completa tus datos</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setOrderOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
           {orderSuccess ? (
             <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Pedido registrado con éxito!</p><p className="mt-2 text-sm text-muted-foreground">Tus datos se han guardado en Supabase y se ha abierto WhatsApp para coordinar la entrega.</p><button type="button" onClick={() => { setOrderOpen(false); setOrderSuccess(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
           ) : (
@@ -493,7 +519,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             <div className="border-t border-border p-5">
               <div className="mb-4 flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><strong>{formatPrice(subtotal.toFixed(2), currency)}</strong></div>
               <div className="mb-3 rounded-xl bg-[#1197c5]/10 p-3 text-xs text-[#1197c5]">
-                {isAuthenticated ? '✓ Autenticado con Auth0 para realizar tu compra' : '🔒 Se requerirá autenticación Auth0 al pulsar "Proceder a Comprar"'}
+                {isAuthenticated ? '✓ Con tu cuenta Gmail puedes proceder con la compra' : '🔒 Debes estar registrado o iniciar sesión para procesar la compra'}
               </div>
               <motion.button onClick={checkout} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} className="flex w-full items-center justify-center gap-2 bg-[#e30613] px-5 py-4 text-sm font-bold text-white shadow-lg">Proceder a Comprar {isAuthenticated ? <ArrowRight className="size-4" /> : <LogIn className="size-4" />}</motion.button>
             </div>
