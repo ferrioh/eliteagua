@@ -1,0 +1,6 @@
+allowBuilds:
+  msw: true
+onlyBuiltDependencies:
+  - msw
+overrides:
+  hono: 4.12.25
