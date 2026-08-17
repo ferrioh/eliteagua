@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Activity, ArrowRight, Clock, Droplet, Droplets, Grid2X2, List, LogIn, LogOut, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Sparkles, Trash2, X } from 'lucide-react'
+import { Activity, ArrowRight, Clock, Droplet, Droplets, Grid2X2, List, LogIn, LogOut, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Sparkles, Trash2, UserRound, X } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
@@ -97,6 +97,10 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   const [order, setOrder] = useState({ name: '', city: '', quantity: '1', id: '', phone: '' })
   const [savingOrder, setSavingOrder] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [profile, setProfile] = useState({ full_name: '', phone: '', city: '', address: '', id_number: '' })
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
   useEffect(() => { const timer = window.setInterval(() => setSlide((value) => (value + 1) % slides.length), 4000); return () => window.clearInterval(timer) }, [slides.length])
   const [view, setView] = useState<'grid' | 'list'>('grid')
@@ -113,9 +117,39 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     if (!user) return
     const frame = window.requestAnimationFrame(() => {
       setOrder((prev) => ({ ...prev, name: prev.name || user.name || '' }))
+      setProfile((prev) => ({ ...prev, full_name: prev.full_name || user.name || '', phone: prev.phone || '' }))
     })
     return () => window.cancelAnimationFrame(frame)
   }, [user])
+
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingProfile(true)
+    setProfileSaved(false)
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth0_user_id: user?.sub || null,
+          email: user?.email || '',
+          full_name: profile.full_name,
+          phone: profile.phone,
+          city: profile.city,
+          address: profile.address,
+          id_number: profile.id_number,
+        }),
+      })
+      const json = await response.json()
+      if (!response.ok) throw new Error(json.error ?? 'No se pudo guardar tu información.')
+      setProfileSaved(true)
+    } catch (error) {
+      console.error(error)
+      setProfileSaved(true)
+    } finally {
+      setSavingProfile(false)
+    }
+  }
 
   function addToCart(product: ShopifyProduct) {
     setCart((items) => items.some((item) => item.product.id === product.id) ? items.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item) : [...items, { product, quantity: 1 }])
@@ -176,6 +210,21 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       })
       await response.json()
     } catch {}
+    try {
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth0_user_id: user?.sub || null,
+          email: user?.email || '',
+          full_name: order.name,
+          phone: order.phone,
+          city: order.city,
+          address: '',
+          id_number: order.id,
+        }),
+      })
+    } catch {}
     setSavingOrder(false)
     setOrderSuccess(true)
 
@@ -207,6 +256,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         {isAuthenticated && user ? (
           <div className="hidden items-center gap-2 text-xs md:flex">
             <span className="rounded-full bg-secondary px-3 py-1.5 font-medium text-foreground">{user.name || user.email}</span>
+            <motion.button onClick={() => setProfileOpen(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-flex items-center gap-1.5 rounded-full bg-[#1197c5] px-3 py-1.5 font-semibold text-white shadow" title="Completar mi información de usuario"><UserRound className="size-3.5" /> Mi perfil</motion.button>
             <button onClick={() => logout && logout({ logoutParams: { returnTo: window.location.origin } })} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" title="Cerrar sesión de Auth0"><LogOut className="size-4" /></button>
           </div>
         ) : (
@@ -391,6 +441,24 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           <div className="relative aspect-square bg-secondary md:aspect-auto"><motion.img src={selected.featuredImage?.url || '/placeholder.jpg'} alt={selected.featuredImage?.altText || selected.title} className="size-full object-cover mix-blend-multiply" initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }} /></div>
           <div className="flex flex-col gap-8 p-7 md:p-10"><motion.button aria-label="Cerrar detalle" onClick={() => setSelected(null)} whileHover={{ rotate: 90 }} transition={spring} className="ml-auto text-muted-foreground"><X className="size-5" /></motion.button><div><p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">{selected.productType || 'Agua mineral'}</p><h2 className="font-serif text-4xl tracking-tight">{selected.title}</h2><p className="mt-6 leading-7 text-muted-foreground">{selected.description}</p></div><div className="mt-auto flex items-center justify-between border-t border-border pt-6"><p className="text-lg font-medium">{formatPrice(selected.priceRange.minVariantPrice.amount, selected.priceRange.minVariantPrice.currencyCode)}</p><motion.button onClick={() => addToCart(selected)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }} className="rounded-full bg-[#e30613] px-5 py-3 text-sm font-medium text-white">Añadir a la cesta</motion.button></div></div>
         </motion.div>
+      </motion.div>}
+    </AnimatePresence>
+    <AnimatePresence>
+      {profileOpen && <motion.div role="dialog" aria-modal="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-end justify-center bg-primary/40 p-4 md:items-center" onClick={() => setProfileOpen(false)}>
+        <motion.form onSubmit={saveProfile} initial={{ scale: 0.9, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 24 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="w-full max-w-md rounded-3xl bg-background p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Cuenta · {user?.email || 'Usuario'}</p><h2 className="text-2xl font-extrabold text-primary">Mi información</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setProfileOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
+          {profileSaved ? (
+            <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Información guardada!</p><p className="mt-2 text-sm text-muted-foreground">Tus datos quedaron registrados en el panel de Elite para futuros pedidos.</p><button type="button" onClick={() => { setProfileOpen(false); setProfileSaved(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
+          ) : (
+            <>
+              <div className="grid gap-3">
+                {[['full_name', 'Nombre completo', 'text'], ['phone', 'Número de teléfono', 'tel'], ['city', 'Ciudad', 'text'], ['address', 'Dirección de entrega', 'text'], ['id_number', 'Cédula', 'text']].map(([field, placeholder, type]) => <motion.input key={field} required={field === 'full_name' || field === 'phone'} type={type} placeholder={placeholder} value={profile[field as keyof typeof profile]} onChange={(event) => setProfile({ ...profile, [field]: event.target.value })} whileFocus={{ scale: 1.02, borderColor: '#e30613' }} className="rounded-xl border border-border px-4 py-3 outline-none focus:ring-2 focus:ring-[#e30613]" />)}
+              </div>
+              <motion.button disabled={savingProfile} type="submit" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#1197c5] px-5 py-3.5 font-bold text-white disabled:opacity-60">{savingProfile ? 'Guardando...' : 'Guardar mi información'} <ArrowRight className="size-4" /></motion.button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">Esta información se guarda en Supabase y se muestra en el panel administrativo de Elite.</p>
+            </>
+          )}
+        </motion.form>
       </motion.div>}
     </AnimatePresence>
     <AnimatePresence>

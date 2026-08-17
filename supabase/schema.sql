@@ -153,3 +153,35 @@ create policy "Authenticated update orders" on public.orders
 drop policy if exists "Authenticated delete orders" on public.orders;
 create policy "Authenticated delete orders" on public.orders
   for delete using (auth.role() = 'authenticated');
+
+-- 8. Tabla de perfiles de usuario (clientes que inician sesión con Gmail/Auth0)
+create table if not exists public.user_profiles (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  auth0_user_id text not null default '',
+  email text not null default '',
+  full_name text not null default '',
+  phone text not null default '',
+  city text not null default '',
+  address text not null default '',
+  id_number text not null default ''
+);
+
+alter table public.user_profiles enable row level security;
+
+drop policy if exists "Public read profiles" on public.user_profiles;
+create policy "Public read profiles" on public.user_profiles
+  for select using (true);
+
+drop policy if exists "Public insert profiles" on public.user_profiles;
+create policy "Public insert profiles" on public.user_profiles
+  for insert with check (true);
+
+drop policy if exists "Public update profiles" on public.user_profiles;
+create policy "Public update profiles" on public.user_profiles
+  for update using (true);
+
+drop policy if exists "Authenticated delete profiles" on public.user_profiles;
+create policy "Authenticated delete profiles" on public.user_profiles
+  for delete using (auth.role() = 'authenticated');

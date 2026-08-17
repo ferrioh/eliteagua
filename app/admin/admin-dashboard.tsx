@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Phone, Plus, Share2, Trash2, Upload, Users, X } from 'lucide-react'
+import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Phone, Plus, Share2, Trash2, Upload, UserRound, Users, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { CustomProductRow } from '@/lib/products'
 import type { SlideRow } from '@/lib/slides'
 import type { SiteSettings } from '@/lib/settings'
+import { AnalyticsPanel } from './analytics-panel'
+import { UsersPanel } from './users-panel'
 
 type OrderRow = {
   id: string
@@ -29,9 +31,10 @@ const inputClass = 'rounded-xl border border-border bg-background px-4 py-3 outl
 
 export function AdminDashboard({ email }: { email: string }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'catalog' | 'clients' | 'analytics' | 'slides' | 'settings'>('catalog')
+  const [activeTab, setActiveTab] = useState<'catalog' | 'clients' | 'users' | 'analytics' | 'slides' | 'settings'>('catalog')
   const [products, setProducts] = useState<CustomProductRow[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
+  const [profiles, setProfiles] = useState<Array<{ id: string; created_at: string }>>([])
   const [form, setForm] = useState(emptyForm)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
@@ -66,6 +69,15 @@ export function AdminDashboard({ email }: { email: string }) {
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
+
+  const loadProfiles = useCallback(() => {
+    fetch('/api/profile')
+      .then((response) => response.json())
+      .then((json) => setProfiles(json.profiles ?? []))
+      .catch(() => setProfiles([]))
+  }, [])
+
+  useEffect(() => { loadProfiles() }, [loadProfiles])
 
   const loadSlides = useCallback(() => {
     fetch('/api/slides')
@@ -271,11 +283,6 @@ export function AdminDashboard({ email }: { email: string }) {
     }
   }
 
-  // Analytics Calculations
-  const totalWatersSold = orders.reduce((acc, order) => acc + (Number(order.quantity) || 1), orders.length > 0 ? 0 : 42) // Fallback mock sales if table is empty
-  const totalRevenue = orders.reduce((acc, order) => acc + (Number(order.total_price) || 0), orders.length > 0 ? 0 : 540)
-  const uniqueClientsCount = new Set(orders.map((o) => o.customer_phone)).size || (orders.length > 0 ? orders.length : 12)
-
   return <main className="min-h-screen bg-[#edf8fd] px-5 py-10">
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -297,6 +304,7 @@ export function AdminDashboard({ email }: { email: string }) {
           [
             ['catalog', 'Catálogo de Productos', Package],
             ['clients', `Clientes (${orders.length || 12})`, Users],
+            ['users', `Usuarios (${profiles.length})`, UserRound],
             ['analytics', 'Ventas & Análisis', BarChart3],
             ['slides', 'Slider Inicio', Images],
             ['settings', 'Redes Sociales', Share2],
@@ -442,87 +450,11 @@ export function AdminDashboard({ email }: { email: string }) {
         </section>
       )}
 
+      {/* TAB USERS: Usuarios con cuenta Gmail */}
+      {activeTab === 'users' && <UsersPanel />}
+
       {/* TAB 3: SALES & ANALYTICS DASHBOARD */}
-      {activeTab === 'analytics' && (
-        <div className="grid gap-6">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl bg-background p-6 shadow-sm border border-border">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Aguas Vendidas</p>
-              <div className="mt-3 flex items-baseline justify-between">
-                <p className="font-serif text-4xl text-primary">{totalWatersSold}</p>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">+18% este mes</span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-background p-6 shadow-sm border border-border">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ingresos Estimados</p>
-              <div className="mt-3 flex items-baseline justify-between">
-                <p className="font-serif text-4xl text-[#1197c5]">{formatPrice(String(totalRevenue), 'USD')}</p>
-                <span className="rounded-full bg-[#1197c5]/10 px-2.5 py-1 text-xs font-bold text-[#1197c5]">100% verificado</span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-background p-6 shadow-sm border border-border">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Clientes Registrados</p>
-              <div className="mt-3 flex items-baseline justify-between">
-                <p className="font-serif text-4xl text-primary">{uniqueClientsCount}</p>
-                <span className="rounded-full bg-[#e30613]/10 px-2.5 py-1 text-xs font-bold text-[#e30613]">Auth0 activo</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
-              <h3 className="font-serif text-xl text-primary mb-2">Parámetros del Sistema e Inventario</h3>
-              <p className="text-sm text-muted-foreground mb-6">Métricas en tiempo real basadas en la actividad de la planta y pedidos.</p>
-              <div className="grid gap-4 text-sm">
-                <div className="flex items-center justify-between rounded-xl bg-secondary p-4">
-                  <span className="text-muted-foreground">Pureza del Manantial (TDS)</span>
-                  <strong className="text-emerald-600">45 ppm (Excelente)</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-secondary p-4">
-                  <span className="text-muted-foreground">Temperatura de Envasado</span>
-                  <strong className="text-primary">18.4 °C</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-secondary p-4">
-                  <span className="text-muted-foreground">Presión de Línea de Producción</span>
-                  <strong className="text-primary">3.2 Bar</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-secondary p-4">
-                  <span className="text-muted-foreground">Estado de Sincronización Supabase</span>
-                  <strong className="text-emerald-600">Conectado y Seguro</strong>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
-              <h3 className="font-serif text-xl text-primary mb-2">Análisis de Demanda por Formato</h3>
-              <p className="text-sm text-muted-foreground mb-6">Distribución porcentual de las ventas según presentación de agua.</p>
-              <div className="grid gap-4">
-                <div>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="font-medium">Elite 600 ML (Caja 16u)</span>
-                    <strong className="text-[#1197c5]">55%</strong>
-                  </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-[#1197c5]" style={{ width: '55%' }} /></div>
-                </div>
-                <div>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="font-medium">Elite 1.5 L (Caja 12u)</span>
-                    <strong className="text-primary">30%</strong>
-                  </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: '30%' }} /></div>
-                </div>
-                <div>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="font-medium">Elite 350 ML (Caja 24u)</span>
-                    <strong className="text-[#e30613]">15%</strong>
-                  </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-[#e30613]" style={{ width: '15%' }} /></div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-      )}
+      {activeTab === 'analytics' && <AnalyticsPanel orders={orders} />}
 
       {/* TAB 4: SLIDES */}
       {activeTab === 'slides' && (
