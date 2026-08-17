@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { SiteSettings } from '@/lib/settings'
 import { getOrderStatusMeta, type OrderRow } from '@/lib/orders'
+import { ThemeToggle } from './theme-toggle'
 
 type Props = { products: ShopifyProduct[]; slides: string[]; settings: SiteSettings }
 type CartItem = { product: ShopifyProduct; quantity: number }
@@ -55,7 +56,7 @@ function TickerItem({ metric, reduce }: { metric: (typeof originMetrics)[number]
   const filled = Math.round(metric.progress * dots)
   const number = metric.decimals ? metric.value.toFixed(metric.decimals) : String(metric.value)
   return (
-    <div className="flex items-center gap-3 rounded-full border border-white/60 bg-white/25 px-4 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
+    <div className="flex items-center gap-3 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
       <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38c6f0] to-[#0e7fb5] text-white shadow-md shadow-[#1197c5]/40">
         <motion.span animate={reduce ? undefined : { y: [0, -1.5, 0], rotate: [0, 6, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} className="grid"><Icon className="size-4" /></motion.span>
         <motion.span className="absolute inset-0 rounded-full border border-[#56c7f2]/60" animate={reduce ? undefined : { scale: [1, 1.4], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }} />
@@ -308,11 +309,12 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             <button onClick={handleLogout} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" title="Cerrar sesión"><LogOut className="size-4" /></button>
           </div>
         ) : (
-          <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md md:inline-flex">
+          <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:inline-flex">
             <span className="grid size-6 place-items-center rounded-full bg-white shadow ring-1 ring-black/5"><GoogleIcon className="size-3.5" /></span>
             <span className="relative"><span className="absolute inset-0 origin-left rounded-full bg-[#1197c5]/15 blur-[2px]" />Iniciar con Gmail</span>
           </motion.button>
         )}
+        <ThemeToggle className="rounded-full border border-border bg-background/60 backdrop-blur" />
         <motion.button onClick={() => setCartOpen(true)} whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.92 }} className="flex items-center gap-2 text-sm font-medium" aria-label="Abrir cesta">
           <motion.span whileHover={{ rotate: -15 }} transition={spring}><ShoppingBag className="size-4 text-primary" /></motion.span>
           <span className="hidden sm:inline">Cesta</span>
@@ -336,22 +338,26 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             <button onClick={handleAuthLogin} className="flex items-center gap-2 font-semibold text-[#1197c5]"><GoogleIcon className="size-4" /> Iniciar sesión con Gmail</button>
           )}
           <motion.button className="text-left" whileTap={{ scale: 0.97, x: 4 }} onClick={() => { setCartOpen(true); setMobileMenu(false) }}>Ver cesta</motion.button>
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-xs text-muted-foreground">Apariencia</span>
+            <ThemeToggle />
+          </div>
         </motion.nav>}
       </AnimatePresence>
     </header>
     <section id="inicio" className="relative w-full overflow-hidden text-primary-foreground"><div className="relative h-[300px] w-full overflow-hidden sm:h-[420px] lg:h-[560px]">
       <motion.div className="flex h-full cursor-grab active:cursor-grabbing" animate={{ x: `${-slide * 100}%` }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} drag="x" dragElastic={0.12} onDragEnd={(_event, info) => { if (info.offset.x < -60) setSlide((value) => (value + 1) % slides.length); else if (info.offset.x > 60) setSlide((value) => (value - 1 + slides.length) % slides.length) }}>
-        {slides.map((url, index) => <div key={index} className="relative h-full w-full shrink-0 overflow-hidden"><img src={url} alt={`Slide ${index + 1}`} draggable={false} className="size-full object-cover object-center" /><div className="pointer-events-none absolute inset-0 bg-primary/10" /></div>)}
+        {slides.map((url, index) => <div key={index} className="relative h-full w-full shrink-0 overflow-hidden"><img src={url} alt={`Slide ${index + 1} de Agua Elite`} draggable={false} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'low'} decoding="async" className="size-full object-cover object-center" /><div className="pointer-events-none absolute inset-0 bg-primary/10" /></div>)}
       </motion.div>
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 p-3 sm:inset-x-6 sm:p-5">
-        <div className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl border border-white/25 bg-white/15 px-3 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
+        <div className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-2xl border border-white/25 bg-white/15 px-3 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl dark:bg-white/10">
           <motion.span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e30613] text-white shadow" animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}><Sparkles className="size-3.5" /></motion.span>
           <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">Nuevos</span>
           <div className="relative min-w-0 flex-1 overflow-hidden">
             <motion.div className="flex w-max items-center gap-4" animate={reduce ? undefined : { x: ['0%', '-50%'] }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}>
               {[...catalog, ...catalog].map((product, i) => (
-                <a key={`${product.id}-${i}`} href="#catalogo" className="flex shrink-0 items-center gap-2 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm transition-colors hover:bg-white">
+                <a key={`${product.id}-${i}`} href="#catalogo" className="flex shrink-0 items-center gap-2 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm transition-colors hover:bg-white dark:bg-slate-900/85 dark:hover:bg-slate-900">
                   <img src={product.featuredImage?.url || '/placeholder.jpg'} alt="" className="size-4 rounded-full object-cover mix-blend-multiply" />
                   <span className="whitespace-nowrap">{product.title}</span>
                   <span className="whitespace-nowrap text-[#e30613]">{formatPrice(product.priceRange.minVariantPrice.amount, product.priceRange.minVariantPrice.currencyCode)}</span>
@@ -365,7 +371,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         </div>
       </div>
 
-      <motion.div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-white/40 bg-white/20 px-4 py-2 shadow-lg shadow-[#0a4566]/15 backdrop-blur-xl sm:bottom-8 sm:gap-4 sm:px-5" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 22 }}>
+      <motion.div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-white/40 bg-white/20 px-4 py-2 shadow-lg shadow-[#0a4566]/15 backdrop-blur-xl dark:border-white/30 dark:bg-white/10 sm:bottom-8 sm:gap-4 sm:px-5" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 22 }}>
         <span className="block text-center text-xl font-bold tracking-[0.2em] tabular-nums sm:text-2xl">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span key={slide} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 26 }} className="inline-block">{String(slide + 1).padStart(2, '0')}</motion.span>
@@ -391,17 +397,17 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">Agua mineral Elite, envasada en el manantial. Elige tu formato favorito y lo llevamos a tu mesa.</p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-[#1197c5]/20 bg-white/70 px-4 py-2.5 text-sm text-muted-foreground shadow-sm backdrop-blur-md transition-colors focus-within:border-[#1197c5] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1197c5]/20 md:w-64"><Search className="size-4 shrink-0 text-[#1197c5]" /><span className="sr-only">Buscar productos</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar agua" className="w-full bg-transparent outline-none placeholder:text-muted-foreground" /></label>
-          <div className="flex gap-1 rounded-full border border-[#1197c5]/20 bg-white/70 p-1 shadow-sm backdrop-blur-md" aria-label="Cambiar distribución">{['grid', 'list'].map((mode) => <motion.button key={mode} aria-label={mode === 'grid' ? 'Vista en cuadrícula' : 'Vista en lista'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.85 }} className={`rounded-full p-2 transition-colors ${view === mode ? 'bg-[#1197c5] text-white shadow' : 'text-muted-foreground'}`} onClick={() => setView(mode as 'grid' | 'list')}>{mode === 'grid' ? <Grid2X2 className="size-4" /> : <List className="size-4" />}</motion.button>)}</div>
+          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-[#1197c5]/20 bg-white/70 px-4 py-2.5 text-sm text-muted-foreground shadow-sm backdrop-blur-md transition-colors focus-within:border-[#1197c5] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1197c5]/20 dark:bg-white/10 dark:focus-within:bg-[#0b2531] md:w-64"><Search className="size-4 shrink-0 text-[#1197c5]" /><span className="sr-only">Buscar productos</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar agua" className="w-full bg-transparent outline-none placeholder:text-muted-foreground" /></label>
+          <div className="flex gap-1 rounded-full border border-[#1197c5]/20 bg-white/70 p-1 shadow-sm backdrop-blur-md dark:bg-white/10" aria-label="Cambiar distribución">{['grid', 'list'].map((mode) => <motion.button key={mode} aria-label={mode === 'grid' ? 'Vista en cuadrícula' : 'Vista en lista'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.85 }} className={`rounded-full p-2 transition-colors ${view === mode ? 'bg-[#1197c5] text-white shadow' : 'text-muted-foreground'}`} onClick={() => setView(mode as 'grid' | 'list')}>{mode === 'grid' ? <Grid2X2 className="size-4" /> : <List className="size-4" />}</motion.button>)}</div>
         </div>
       </motion.div>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className={view === 'grid' ? 'grid grid-cols-2 gap-x-4 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-16' : 'flex flex-col gap-4'}>
-        {filtered.map((product) => <motion.article key={product.id} layout variants={cardVariants} whileHover={view === 'grid' ? { y: -12 } : { x: 8 }} whileTap={{ scale: 0.98 }} transition={spring} className={view === 'grid' ? 'group relative cursor-pointer rounded-[2rem] border border-white/70 bg-white/55 p-3 shadow-lg shadow-[#1197c5]/10 backdrop-blur-xl transition-shadow duration-300 hover:shadow-2xl hover:shadow-[#1197c5]/25' : 'flex cursor-pointer items-center gap-4 rounded-[1.6rem] border border-white/70 bg-white/60 p-4 shadow-md shadow-[#1197c5]/5 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-[#1197c5]/15'} onClick={() => setSelected(product)}>
-          <div className={view === 'grid' ? 'relative mb-4 aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] shadow-inner transition-shadow duration-300 group-hover:shadow-xl' : 'relative size-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff] sm:size-24'}>
+        {filtered.map((product) => <motion.article key={product.id} layout variants={cardVariants} whileHover={view === 'grid' ? { y: -12 } : { x: 8 }} whileTap={{ scale: 0.98 }} transition={spring} className={view === 'grid' ? 'group relative cursor-pointer rounded-[2rem] border border-white/70 bg-white/55 p-3 shadow-lg shadow-[#1197c5]/10 backdrop-blur-xl transition-shadow duration-300 hover:shadow-2xl hover:shadow-[#1197c5]/25 dark:border-white/10 dark:bg-[#0b2531]/80' : 'flex cursor-pointer items-center gap-4 rounded-[1.6rem] border border-white/70 bg-white/60 p-4 shadow-md shadow-[#1197c5]/5 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-[#1197c5]/15 dark:border-white/10 dark:bg-[#0b2531]/80'} onClick={() => setSelected(product)}>
+          <div className={view === 'grid' ? 'relative mb-4 aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] shadow-inner transition-shadow duration-300 group-hover:shadow-xl dark:from-[#0c2a38] dark:via-[#0c2a38] dark:to-[#0c2a38]' : 'relative size-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff] dark:from-[#0c2a38] dark:to-[#0c2a38] sm:size-24'}>
             <motion.span className="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-[#1197c5]/15 blur-2xl" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} />
             <motion.span className="pointer-events-none absolute -bottom-6 -left-6 size-20 rounded-full bg-[#e30613]/10 blur-xl" animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }} />
-            <motion.img src={product.featuredImage?.url || '/placeholder.jpg'} alt={product.featuredImage?.altText || product.title} className="relative size-full object-cover mix-blend-multiply" whileHover={{ scale: 1.12 }} transition={{ duration: 0.55, ease: 'easeOut' }} />
-            <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0e7fb5] backdrop-blur-md">{product.tags[0] || 'Mineral'}</span>
+            <motion.img src={product.featuredImage?.url || '/placeholder.jpg'} alt={product.featuredImage?.altText || product.title} loading="lazy" decoding="async" className="relative size-full object-cover mix-blend-multiply" whileHover={{ scale: 1.12 }} transition={{ duration: 0.55, ease: 'easeOut' }} />
+            <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0e7fb5] backdrop-blur-md dark:border-white/10 dark:bg-white/10">{product.tags[0] || 'Mineral'}</span>
             <motion.span whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="absolute bottom-3 right-3 grid size-10 place-items-center rounded-full bg-gradient-to-br from-[#1197c5] to-[#0e7fb5] text-white opacity-0 shadow-lg shadow-[#1197c5]/40 transition-opacity duration-300 group-hover:opacity-100"><Plus className="size-4" /></motion.span>
           </div>
           <div className={view === 'grid' ? 'min-w-0 px-1 pb-1' : 'min-w-0 flex-1'}>
@@ -413,12 +419,12 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       {filtered.length === 0 && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center text-muted-foreground">No encontramos ese origen. Prueba otra búsqueda.</motion.p>}
       </div>
     </section>
-    <div className="relative z-10 overflow-hidden border-y border-[#1197c5]/15 bg-gradient-to-r from-[#cdeeff] via-[#e8f9ff] to-[#cdeeff] py-2.5 shadow-inner shadow-[#1197c5]/10">
+    <div className="relative z-10 overflow-hidden border-y border-[#1197c5]/15 bg-gradient-to-r from-[#cdeeff] via-[#e8f9ff] to-[#cdeeff] py-2.5 shadow-inner shadow-[#1197c5]/10 dark:from-[#0a2430] dark:via-[#0d2b3a] dark:to-[#0a2430]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(86,199,242,0.3),transparent_45%),radial-gradient(circle_at_88%_50%,rgba(227,6,19,0.1),transparent_45%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#1197c5]/40 to-transparent" aria-hidden="true" />
       <div className="relative flex items-center gap-4 overflow-hidden">
-        <div className="z-10 flex shrink-0 items-center gap-2.5 rounded-full border border-white/60 bg-white/25 px-4 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
+        <div className="z-10 flex shrink-0 items-center gap-2.5 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
           <span className="relative flex size-2"><motion.span className="absolute inline-flex size-full rounded-full bg-[#e30613]" animate={{ scale: [1, 2.4], opacity: [0.8, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-2 rounded-full bg-[#e30613]" /></span>
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e7fb5]">Analítica Elite</span>
         </div>
@@ -427,23 +433,23 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         </motion.div>
       </div>
     </div>
-    <motion.section id="origen" className="relative overflow-hidden border-b border-border bg-gradient-to-b from-[#eafaff] via-[#dff4ff] to-[#f4fcff] px-5 py-12 md:py-16" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}>
+    <motion.section id="origen" className="relative overflow-hidden border-b border-border bg-gradient-to-b from-[#eafaff] via-[#dff4ff] to-[#f4fcff] px-5 py-12 dark:from-[#0a2430] dark:via-[#0d2b3a] dark:to-[#081d27] md:py-16" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}>
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         <motion.div className="absolute -left-24 top-16 size-72 rounded-full bg-[#1197c5]/15 blur-3xl" animate={{ x: [0, 24, 0], y: [0, 16, 0] }} transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }} />
         <motion.div className="absolute -right-20 bottom-10 size-80 rounded-full bg-[#98e5ff]/50 blur-3xl" animate={{ x: [0, -20, 0], y: [0, -12, 0] }} transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }} />
       </div>
       <div className="relative z-10 mx-auto max-w-3xl">
         <motion.div variants={origenContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }} className="flex flex-col items-center text-center">
-          <motion.p variants={origenItem} className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#1197c5]/20 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#1197c5] backdrop-blur-md"><motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="inline-grid"><Droplets className="size-3.5" /></motion.span> Nuestro origen <span className="relative flex size-1.5"><motion.span className="absolute inline-flex size-full rounded-full bg-[#1197c5]" animate={{ scale: [1, 2.4], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-1.5 rounded-full bg-[#1197c5]" /></span></motion.p>
+          <motion.p variants={origenItem} className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#1197c5]/20 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#1197c5] backdrop-blur-md dark:bg-white/10"><motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="inline-grid"><Droplets className="size-3.5" /></motion.span> Nuestro origen <span className="relative flex size-1.5"><motion.span className="absolute inline-flex size-full rounded-full bg-[#1197c5]" animate={{ scale: [1, 2.4], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-1.5 rounded-full bg-[#1197c5]" /></span></motion.p>
           <motion.h2 variants={origenItem} className="font-serif text-5xl leading-[1.05] tracking-tight [perspective:600px] md:text-7xl">El agua que nace en el <motion.span className="inline-block bg-gradient-to-r from-[#0e7fb5] via-[#1197c5] to-[#56c7f2] bg-clip-text italic text-transparent" style={{ backgroundSize: '300% 100%' }} animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'], y: [0, -5, 0] }} transition={{ backgroundPosition: { duration: 6, repeat: Infinity, ease: 'easeInOut' }, y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}>manantial</motion.span></motion.h2>
           <motion.p variants={origenItem} className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">El agua mineral Elite nace en un manantial protegido en el corazón de Anzoátegui, Venezuela. Filtrada por capas naturales de roca y minerales, <span className="relative inline-block font-semibold text-[#0e7fb5]"><motion.span className="absolute -inset-x-1 -inset-y-0.5 -skew-x-6 rounded bg-gradient-to-r from-[#1197c5]/15 to-[#56c7f2]/25" initial={{ scaleX: 0, opacity: 0 }} whileInView={{ scaleX: 1, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.7, duration: 0.6, ease: 'easeOut' }} /><motion.span className="relative inline-block" animate={{ opacity: [0.85, 1, 0.85] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>brota pura y equilibrada</motion.span></span> para acompañar cada mesa y cada momento de tu día.</motion.p>
           <motion.div variants={origenItem} className="mt-10 flex flex-wrap justify-center gap-3">
-            {[['Purificada', '100% natural'], ['Envasada en origen', 'Frescura garantizada'], ['Minerales naturales', 'Equilibrio y sabor']].map(([title, sub]) => <motion.div key={title} variants={chipVariants} whileHover={{ y: -4, scale: 1.03, boxShadow: '0 12px 28px rgba(17,151,197,0.18)' }} transition={spring} className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-white/60 px-5 py-3 shadow-sm backdrop-blur-md"><motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2.5, repeat: Infinity, delay: 1 }} className="grid place-items-center"><Droplet className="size-4 shrink-0 text-[#1197c5]" /></motion.span><div><p className="text-sm font-semibold text-foreground">{title}</p><p className="text-xs text-muted-foreground">{sub}</p></div></motion.div>)}
+            {[['Purificada', '100% natural'], ['Envasada en origen', 'Frescura garantizada'], ['Minerales naturales', 'Equilibrio y sabor']].map(([title, sub]) => <motion.div key={title} variants={chipVariants} whileHover={{ y: -4, scale: 1.03, boxShadow: '0 12px 28px rgba(17,151,197,0.18)' }} transition={spring} className="flex items-center gap-2.5 rounded-2xl border border-white/70 bg-white/60 px-5 py-3 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[#0b2531]/80"><motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2.5, repeat: Infinity, delay: 1 }} className="grid place-items-center"><Droplet className="size-4 shrink-0 text-[#1197c5]" /></motion.span><div><p className="text-sm font-semibold text-foreground">{title}</p><p className="text-xs text-muted-foreground">{sub}</p></div></motion.div>)}
           </motion.div>
         </motion.div>
       </div>
     </motion.section>
-    <section id="contacto" className="border-y border-border bg-[#98e5ff] px-5 py-14 pb-28 md:px-10 md:py-20"><div className="mx-auto max-w-7xl">
+    <section id="contacto" className="border-y border-border bg-[#98e5ff] px-5 py-14 pb-28 dark:bg-[#0a2430] md:px-10 md:py-20"><div className="mx-auto max-w-7xl">
       <div className="mb-10 grid gap-6 md:grid-cols-[.7fr_1fr] md:items-end"><div><p className="mb-4 text-xs uppercase tracking-[0.2em] text-muted-foreground">Encuéntranos</p><h2 className="font-serif text-3xl leading-tight md:text-5xl">Agua Elite,<br />cerca de ti.</h2></div><p className="max-w-3xl font-serif text-2xl leading-tight md:text-4xl">Cada botella conserva la historia del lugar donde nace.</p></div>
       <motion.div variants={contactContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} className="grid gap-5 md:grid-cols-3">
         <motion.div variants={contactCard} whileHover={{ y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }} className="flex flex-col gap-4 rounded-3xl border border-primary/10 bg-background p-6 shadow-lg shadow-primary/5">

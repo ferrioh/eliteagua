@@ -172,12 +172,12 @@ export function AnalyticsPanel({ orders }: { orders: OrderRow[] }) {
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Droplet className="size-4 text-[#1197c5]" /> Aguas vendidas</div>
           <p className="mt-3 font-serif text-4xl text-primary">{totalWaters}</p>
-          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${watersDelta >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{watersDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{watersDelta >= 0 ? '+' : ''}{watersDelta}% vs mes anterior</p>
+          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${watersDelta >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300'}`}>{watersDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{watersDelta >= 0 ? '+' : ''}{watersDelta}% vs mes anterior</p>
         </div>
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"><BarChart3 className="size-4 text-[#e30613]" /> Ingresos</div>
           <p className="mt-3 font-serif text-4xl text-[#1197c5]">{formatPrice(String(totalRevenue.toFixed(2)), 'USD')}</p>
-          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${revenueDelta >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{revenueDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{revenueDelta >= 0 ? '+' : ''}{revenueDelta}% vs mes anterior</p>
+          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${revenueDelta >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300'}`}>{revenueDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{revenueDelta >= 0 ? '+' : ''}{revenueDelta}% vs mes anterior</p>
         </div>
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"><ShoppingBag className="size-4 text-emerald-600" /> Pedidos</div>
@@ -187,7 +187,7 @@ export function AnalyticsPanel({ orders }: { orders: OrderRow[] }) {
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Users className="size-4 text-[#1197c5]" /> Clientes únicos</div>
           <p className="mt-3 font-serif text-4xl text-primary">{uniqueClients}</p>
-          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${clientsDelta >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{clientsDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{clientsDelta >= 0 ? '+' : ''}{clientsDelta}% vs mes anterior</p>
+          <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${clientsDelta >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300'}`}>{clientsDelta >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}{clientsDelta >= 0 ? '+' : ''}{clientsDelta}% vs mes anterior</p>
         </div>
       </div>
 

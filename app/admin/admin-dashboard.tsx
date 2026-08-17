@@ -12,6 +12,7 @@ import type { SiteSettings } from '@/lib/settings'
 import { AnalyticsPanel } from './analytics-panel'
 import { UsersPanel } from './users-panel'
 import { OrdersPanel } from './orders-panel'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { processImageForUpload } from '@/lib/image-process'
 import type { OrderRow } from '@/lib/orders'
 
@@ -280,11 +281,14 @@ export function AdminDashboard({ email }: { email: string }) {
     }
   }
 
-  return <main className="min-h-screen bg-[#edf8fd] px-5 py-10">
+  return <main className="min-h-screen bg-[#edf8fd] px-5 py-10 dark:bg-[#071c26]">
     <div className="mx-auto max-w-6xl">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground"><ArrowLeft className="size-4" /> Volver a Elite</Link>
-        <button onClick={() => void handleLogout()} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-muted-foreground"><LogOut className="size-4" /> Cerrar sesión</button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="rounded-full border border-border bg-background" />
+          <button onClick={() => void handleLogout()} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-muted-foreground"><LogOut className="size-4" /> Cerrar sesión</button>
+        </div>
       </div>
       <div className="mb-8 flex items-center gap-3">
         <img src="/elite-logo.jpg" alt="Elite" className="size-14 rounded-full object-cover" />
@@ -349,7 +353,7 @@ export function AdminDashboard({ email }: { email: string }) {
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" /></div>
               <label className="flex flex-col gap-2 text-sm font-semibold">O pega una URL de imagen<small className="font-normal text-muted-foreground">Ej. https://.../elite-600ml.png</small><div className="relative"><Link2 className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={form.image_url} onChange={(event) => { setForm({ ...form, image_url: event.target.value }); setFile(null); setPreview(form.image_url) }} placeholder="https://..." className={`${inputClass} w-full pl-11`} /></div></label>
-              {status && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-destructive'}`}>{status.message}</p>}
+              {status && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-red-50 text-destructive dark:bg-red-950/60'}`}>{status.message}</p>}
               <button disabled={saving} className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-[#e30613] px-5 py-3.5 font-bold text-white disabled:opacity-60"><Upload className="size-4" />{saving ? 'Guardando...' : editing ? 'Actualizar producto' : 'Publicar en el catálogo'}</button>
             </form>
           </section>
@@ -403,7 +407,7 @@ export function AdminDashboard({ email }: { email: string }) {
               <label className="flex flex-col gap-2 text-sm font-semibold">Facebook<input value={social.facebook_url} onChange={(event) => setSocial({ ...social, facebook_url: event.target.value })} placeholder="https://facebook.com/elite" className={inputClass} /></label>
               <label className="flex flex-col gap-2 text-sm font-semibold">X (Twitter)<input value={social.x_url} onChange={(event) => setSocial({ ...social, x_url: event.target.value })} placeholder="https://x.com/elite" className={inputClass} /></label>
             </div>
-            {socialStatus && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${socialStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-destructive'}`}>{socialStatus.message}</p>}
+            {socialStatus && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${socialStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-red-50 text-destructive dark:bg-red-950/60'}`}>{socialStatus.message}</p>}
             <button disabled={savingSocial} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#e30613] px-5 py-3 text-sm font-bold text-white disabled:opacity-60"><Share2 className="size-4" />{savingSocial ? 'Guardando...' : 'Guardar enlaces'}</button>
           </form>
         </section>
