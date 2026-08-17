@@ -110,6 +110,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   useEffect(() => { const timer = window.setInterval(() => setSlide((value) => (value + 1) % slides.length), 4000); return () => window.clearInterval(timer) }, [slides.length])
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [chatOpen, setChatOpen] = useState(false)
+  const [fabPos, setFabPos] = useState({ x: 0, y: 0 })
   const [question, setQuestion] = useState('')
   const { messages, sendMessage, status } = useChat()
   const catalog = products.length ? products : fallbackProducts
@@ -411,7 +412,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           </div>
           <div className={view === 'grid' ? 'min-w-0 px-1 pb-1' : 'min-w-0 flex-1'}>
             <div className="flex items-start justify-between gap-2"><h3 className={`font-serif leading-tight transition-colors group-hover:text-[#1197c5] ${view === 'grid' ? 'text-xl' : 'text-2xl'}`}>{product.title}</h3><p className="shrink-0 rounded-full bg-[#1197c5]/10 px-2.5 py-1 text-xs font-bold text-[#1197c5]">{formatPrice(product.priceRange.minVariantPrice.amount, product.priceRange.minVariantPrice.currencyCode)}</p></div>
-            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{product.description}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground dark:text-slate-800">{product.description}</p>
           </div>
         </motion.article>)}
       </motion.div>
@@ -492,10 +493,21 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <motion.button onClick={() => setCartOpen(true)} whileTap={{ scale: 0.9 }} className="relative flex flex-col items-center gap-1"><ShoppingBag className="size-5" /> Cesta{count > 0 && <AnimatePresence initial={false}><motion.span key={count} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} className="absolute -right-2 -top-1 grid size-4 place-items-center rounded-full bg-[#e30613] text-[9px] text-white">{count}</motion.span></AnimatePresence>}</motion.button>
       <motion.a href="#contacto" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Mail className="size-5" /> Contacto</motion.a>
     </nav>
-    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} animate={{ y: [0, -6, 0] }} transition={{ y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }} className="fixed bottom-24 right-3 z-20 grid size-14 place-items-center rounded-full bg-[#1197c5] text-white shadow-xl">
+    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} drag dragMomentum={false} dragElastic={0.1} onDrag={(_event, info) => setFabPos({ x: info.offset.x, y: info.offset.y })} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} className="fixed bottom-24 right-3 z-20 grid size-14 touch-none cursor-grab place-items-center rounded-full bg-[#1197c5] text-white shadow-xl active:cursor-grabbing">
       <motion.span className="absolute inset-0 rounded-full bg-[#1197c5]/40" animate={{ scale: [1, 1.45], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
-      <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}><Droplets className="size-7" /></motion.span>
+      <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0], y: [0, -6, 0] }} transition={{ rotate: { duration: 2.5, repeat: Infinity, repeatDelay: 1 }, y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}><Droplets className="size-7" /></motion.span>
     </motion.button>
+    {!chatOpen && (
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        style={{ x: fabPos.x, y: fabPos.y }}
+        className="pointer-events-none fixed bottom-24 right-[4.75rem] z-20 flex items-center gap-2 rounded-2xl rounded-br-md border border-[#1197c5]/20 bg-background px-3.5 py-2 text-xs font-semibold text-primary shadow-lg"
+      >
+        <motion.img src="/elite-logo.jpg" alt="Asistente Elite" className="size-5 rounded-full object-cover" animate={{ y: [0, -2, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} />
+        ¡Hola! ¿En qué te ayudo?
+      </motion.div>
+    )}
     <AnimatePresence>
       {chatOpen && <motion.section initial={{ opacity: 0, y: 32, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 32, scale: 0.92 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="fixed bottom-32 right-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-[2rem] border border-primary/10 bg-background shadow-[0_24px_70px_rgba(8,45,100,.28)]" aria-label="Asistente de manantial">
         <div className="relative overflow-hidden bg-gradient-to-br from-[#1197c5] via-[#0e7fb5] to-primary p-5 pb-7 text-primary-foreground">
@@ -517,7 +529,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     <AnimatePresence>
       {selected && <motion.div role="dialog" aria-modal="true" aria-label={`Detalle de ${selected.title}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 z-50 flex items-end justify-center bg-primary/40 p-0 md:items-center md:p-6" onClick={() => setSelected(null)}>
         <motion.div initial={{ y: 60, opacity: 0, scale: 0.95 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 60, opacity: 0, scale: 0.95 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="grid max-h-[90vh] w-full max-w-4xl overflow-auto bg-background md:grid-cols-2" onClick={(event) => event.stopPropagation()}>
-          <div className="relative aspect-square bg-secondary md:aspect-auto"><motion.img src={selected.featuredImage?.url || '/placeholder.jpg'} alt={selected.featuredImage?.altText || selected.title} className="size-full object-cover mix-blend-multiply" initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }} /></div>
+          <div className="relative aspect-square bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] md:aspect-auto"><motion.img src={selected.featuredImage?.url || '/placeholder.jpg'} alt={selected.featuredImage?.altText || selected.title} className="size-full object-cover mix-blend-multiply" initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }} /></div>
           <div className="flex flex-col gap-8 p-7 md:p-10"><motion.button aria-label="Cerrar detalle" onClick={() => setSelected(null)} whileHover={{ rotate: 90 }} transition={spring} className="ml-auto text-muted-foreground"><X className="size-5" /></motion.button><div><p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">{selected.productType || 'Agua mineral'}</p><h2 className="font-serif text-4xl tracking-tight">{selected.title}</h2><p className="mt-6 leading-7 text-muted-foreground">{selected.description}</p></div><div className="mt-auto flex items-center justify-between border-t border-border pt-6"><p className="text-lg font-medium">{formatPrice(selected.priceRange.minVariantPrice.amount, selected.priceRange.minVariantPrice.currencyCode)}</p><motion.button onClick={() => addToCart(selected)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }} className="rounded-full bg-[#e30613] px-5 py-3 text-sm font-medium text-white">Añadir a la cesta</motion.button></div></div>
         </motion.div>
       </motion.div>}
@@ -604,7 +616,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           <div className="flex items-center justify-between border-b border-border p-5"><div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tu pedido</p><h2 className="font-serif text-3xl">Cesta <span className="font-sans text-sm text-muted-foreground">({count})</span></h2></div><motion.button onClick={() => setCartOpen(false)} whileHover={{ rotate: 90 }} transition={spring} aria-label="Cerrar cesta"><X className="size-5" /></motion.button></div>
           {cart.length === 0 ? <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center"><motion.span animate={{ y: [0, -8, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}><ShoppingBag className="size-8 text-muted-foreground" /></motion.span><p className="text-sm text-muted-foreground">Tu cesta está esperando una botella.</p></div> : <>
             <div className="flex-1 overflow-y-auto p-5"><AnimatePresence initial={false}>{cart.map((item) => <motion.div key={item.product.id} layout initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 48, height: 0 }} transition={spring} className="flex gap-3 overflow-hidden border-b border-border py-4 first:pt-0">
-              <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-secondary"><motion.img src={item.product.featuredImage?.url || '/placeholder.jpg'} alt="" className="size-full object-cover mix-blend-multiply" initial={{ scale: 1.2 }} animate={{ scale: 1 }} transition={{ duration: 0.4 }} /></div>
+              <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff]"><motion.img src={item.product.featuredImage?.url || '/placeholder.jpg'} alt="" className="size-full object-cover mix-blend-multiply" initial={{ scale: 1.2 }} animate={{ scale: 1 }} transition={{ duration: 0.4 }} /></div>
               <div className="min-w-0 flex-1"><h3 className="font-serif text-lg">{item.product.title}</h3><p className="text-sm text-muted-foreground">{formatPrice(item.product.priceRange.minVariantPrice.amount, item.product.priceRange.minVariantPrice.currencyCode)}</p><div className="mt-3 flex items-center gap-3"><motion.button whileTap={{ scale: 0.8 }} onClick={() => changeQuantity(item.product.id, -1)} aria-label="Reducir cantidad" className="border border-border p-1"><Minus className="size-3" /></motion.button><span className="text-sm">{item.quantity}</span><motion.button whileTap={{ scale: 0.8 }} onClick={() => changeQuantity(item.product.id, 1)} aria-label="Aumentar cantidad" className="border border-border p-1"><Plus className="size-3" /></motion.button><motion.button whileTap={{ scale: 0.8 }} onClick={() => setCart((items) => items.filter((cartItem) => cartItem.product.id !== item.product.id))} aria-label="Eliminar producto" className="ml-auto text-muted-foreground"><Trash2 className="size-4" /></motion.button></div></div>
             </motion.div>)}</AnimatePresence></div>
             <div className="border-t border-border p-5">
