@@ -59,14 +59,13 @@ function TickerItem({ metric, reduce }: { metric: (typeof originMetrics)[number]
     <div className="flex items-center gap-3 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
       <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#38c6f0] to-[#0e7fb5] text-white shadow-md shadow-[#1197c5]/40">
         <motion.span animate={reduce ? undefined : { y: [0, -1.5, 0], rotate: [0, 6, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} className="grid"><Icon className="size-4" /></motion.span>
-        <motion.span className="absolute inset-0 rounded-full border border-[#56c7f2]/60" animate={reduce ? undefined : { scale: [1, 1.4], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }} />
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0e7fb5]">{metric.label}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0e7fb5] dark:text-white">{metric.label}</p>
         <div className="mt-0.5 flex items-center gap-2.5">
-          <p className="font-serif text-lg font-bold leading-none text-[#0e7fb5]">{number}<span className="text-sm font-semibold text-[#1197c5]">{metric.suffix}</span></p>
+          <p className="font-serif text-lg font-bold leading-none text-[#0e7fb5] dark:text-white">{number}<span className="text-sm font-semibold text-[#1197c5] dark:text-white/70">{metric.suffix}</span></p>
           <div className="flex items-center gap-1">
-            {Array.from({ length: dots }).map((_, i) => <motion.span key={i} className={`size-1.5 rounded-full ${i < filled ? 'bg-[#1197c5]' : 'bg-[#1197c5]/20'}`} animate={!reduce && i < filled ? { scale: [1, 1.35, 1], opacity: [0.6, 1, 0.6] } : undefined} transition={{ duration: 2, repeat: Infinity, delay: i * 0.18 }} />)}
+            {Array.from({ length: dots }).map((_, i) => <span key={i} className={`size-1.5 rounded-full ${i < filled ? 'bg-[#1197c5]' : 'bg-[#1197c5]/20'}`} />)}
           </div>
         </div>
       </div>
@@ -402,12 +401,12 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         </div>
       </motion.div>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className={view === 'grid' ? 'grid grid-cols-2 gap-x-4 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-16' : 'flex flex-col gap-4'}>
-        {filtered.map((product) => <motion.article key={product.id} layout variants={cardVariants} whileHover={view === 'grid' ? { y: -12 } : { x: 8 }} whileTap={{ scale: 0.98 }} transition={spring} className={view === 'grid' ? 'group relative cursor-pointer rounded-[2rem] border border-white/70 bg-white/55 p-3 shadow-lg shadow-[#1197c5]/10 backdrop-blur-xl transition-shadow duration-300 hover:shadow-2xl hover:shadow-[#1197c5]/25 dark:border-white/10 dark:bg-[#0b2531]/80' : 'flex cursor-pointer items-center gap-4 rounded-[1.6rem] border border-white/70 bg-white/60 p-4 shadow-md shadow-[#1197c5]/5 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-[#1197c5]/15 dark:border-white/10 dark:bg-[#0b2531]/80'} onClick={() => setSelected(product)}>
-          <div className={view === 'grid' ? 'relative mb-4 aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] shadow-inner transition-shadow duration-300 group-hover:shadow-xl dark:from-[#0c2a38] dark:via-[#0c2a38] dark:to-[#0c2a38]' : 'relative size-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff] dark:from-[#0c2a38] dark:to-[#0c2a38] sm:size-24'}>
+        {filtered.map((product) => <motion.article key={product.id} layout variants={cardVariants} whileHover={view === 'grid' ? { y: -12 } : { x: 8 }} whileTap={{ scale: 0.98 }} transition={spring} className={view === 'grid' ? 'group relative cursor-pointer rounded-[2rem] border border-white/70 bg-white/55 p-3 shadow-lg shadow-[#1197c5]/10 backdrop-blur-xl transition-shadow duration-300 hover:shadow-2xl hover:shadow-[#1197c5]/25' : 'flex cursor-pointer items-center gap-4 rounded-[1.6rem] border border-white/70 bg-white/60 p-4 shadow-md shadow-[#1197c5]/5 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-[#1197c5]/15'} onClick={() => setSelected(product)}>
+          <div className={view === 'grid' ? 'relative mb-4 aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] shadow-inner transition-shadow duration-300 group-hover:shadow-xl' : 'relative size-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff] sm:size-24'}>
             <motion.span className="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-[#1197c5]/15 blur-2xl" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} />
             <motion.span className="pointer-events-none absolute -bottom-6 -left-6 size-20 rounded-full bg-[#e30613]/10 blur-xl" animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }} />
             <motion.img src={product.featuredImage?.url || '/placeholder.jpg'} alt={product.featuredImage?.altText || product.title} loading="lazy" decoding="async" className="relative size-full object-cover mix-blend-multiply" whileHover={{ scale: 1.12 }} transition={{ duration: 0.55, ease: 'easeOut' }} />
-            <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0e7fb5] backdrop-blur-md dark:border-white/10 dark:bg-white/10">{product.tags[0] || 'Mineral'}</span>
+            <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0e7fb5] backdrop-blur-md">{product.tags[0] || 'Mineral'}</span>
             <motion.span whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="absolute bottom-3 right-3 grid size-10 place-items-center rounded-full bg-gradient-to-br from-[#1197c5] to-[#0e7fb5] text-white opacity-0 shadow-lg shadow-[#1197c5]/40 transition-opacity duration-300 group-hover:opacity-100"><Plus className="size-4" /></motion.span>
           </div>
           <div className={view === 'grid' ? 'min-w-0 px-1 pb-1' : 'min-w-0 flex-1'}>
@@ -426,7 +425,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <div className="relative flex items-center gap-4 overflow-hidden">
         <div className="z-10 flex shrink-0 items-center gap-2.5 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
           <span className="relative flex size-2"><motion.span className="absolute inline-flex size-full rounded-full bg-[#e30613]" animate={{ scale: [1, 2.4], opacity: [0.8, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-2 rounded-full bg-[#e30613]" /></span>
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e7fb5]">Analítica Elite</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e7fb5] dark:text-white">Analítica Elite</span>
         </div>
         <motion.div className="flex shrink-0 items-center gap-3 pr-4" animate={reduce ? undefined : { x: ['0%', '-50%'] }} transition={{ duration: 34, repeat: Infinity, ease: 'linear' }}>
           {[...originMetrics, ...originMetrics].map((metric, i) => <TickerItem key={i} metric={metric} reduce={reduce} />)}
