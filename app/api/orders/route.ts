@@ -1,13 +1,28 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET() {
+type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>
+
+async function nextTicketNumber(supabase: SupabaseClient) {
+  const { data, error } = await supabase.rpc('increment_order_sequence')
+  if (!error && typeof data === 'number' && Number.isFinite(data)) {
+    return `ELITE-${String(data).padStart(4, '0')}`
+  }
+  const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
+  return `ELITE-${String((count ?? 0) + 1).padStart(4, '0')}`
+}
+
+export async function GET(request: Request) {
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ orders: [] })
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
+
+  const url = new URL(request.url)
+  const email = url.searchParams.get('email')
+
+  let query = supabase.from('orders').select('*').order('created_at', { ascending: false })
+  if (email) query = query.eq('auth0_user_email', email)
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ orders: data })
 }
@@ -34,6 +49,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nombre y teléfono son obligatorios.' }, { status: 400 })
   }
 
+  const ticket_number = await nextTicketNumber(supabase)
+
   const { data, error } = await supabase
     .from('orders')
     .insert({
@@ -47,7 +64,8 @@ export async function POST(request: Request) {
       items,
       auth0_user_id,
       auth0_user_email,
-      status: 'completed'
+      ticket_number,
+      status: 'registrada',
     })
     .select()
     .single()

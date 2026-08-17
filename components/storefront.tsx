@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Activity, ArrowRight, Clock, Droplet, Droplets, Grid2X2, List, LogIn, LogOut, Mail, MapPin, Menu, MessageCircle, Minus, Plus, Search, Send, ShoppingBag, Sparkles, Trash2, UserRound, X } from 'lucide-react'
+import { Activity, ArrowRight, Clock, Droplet, Droplets, Grid2X2, List, LogIn, LogOut, Mail, MapPin, Menu, MessageCircle, Minus, Package, Plus, Search, Send, ShoppingBag, Sparkles, Ticket, Trash2, UserRound, X } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { SiteSettings } from '@/lib/settings'
+import { getOrderStatusMeta, type OrderRow } from '@/lib/orders'
 
 type Props = { products: ShopifyProduct[]; slides: string[]; settings: SiteSettings }
 type CartItem = { product: ShopifyProduct; quantity: number }
@@ -101,6 +102,10 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   const [profile, setProfile] = useState({ full_name: '', phone: '', city: '', address: '', id_number: '' })
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+  const [profileView, setProfileView] = useState<'info' | 'orders'>('info')
+  const [userOrders, setUserOrders] = useState<OrderRow[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [lastOrderTicket, setLastOrderTicket] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
   useEffect(() => { const timer = window.setInterval(() => setSlide((value) => (value + 1) % slides.length), 4000); return () => window.clearInterval(timer) }, [slides.length])
   const [view, setView] = useState<'grid' | 'list'>('grid')
@@ -151,12 +156,50 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     }
   }
 
+  function openProfile() {
+    setProfileOpen(true)
+    setProfileView('info')
+    if (!user?.email) return
+    setOrdersLoading(true)
+    fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
+      .then((response) => response.json())
+      .then((json) => setUserOrders(Array.isArray(json.orders) ? json.orders : []))
+      .catch(() => setUserOrders([]))
+      .finally(() => setOrdersLoading(false))
+  }
+
   function addToCart(product: ShopifyProduct) {
     setCart((items) => items.some((item) => item.product.id === product.id) ? items.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item) : [...items, { product, quantity: 1 }])
     setSelected(null)
     setCartOpen(true)
   }
   function changeQuantity(id: string, delta: number) { setCart((items) => items.map((item) => item.product.id === id ? { ...item, quantity: item.quantity + delta } : item).filter((item) => item.quantity > 0)) }
+  
+  function handleLogout() {
+    try {
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.toLowerCase().includes('auth0')) keysToRemove.push(key)
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key))
+      const supabase = createClient()
+      void supabase?.auth.signOut()
+    } catch {}
+    const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ''
+    const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ''
+    const canUseAuth0 = !!logout && !!domain && !domain.includes('elite-agua.us.auth0.com') && !!clientId && !clientId.includes('mock_client_id') && !clientId.includes('dummy_client_id')
+    if (canUseAuth0) {
+      try {
+        logout({ logoutParams: { returnTo: window.location.origin, clientId } })
+        window.setTimeout(() => { window.location.assign(window.location.origin) }, 2500)
+      } catch {
+        window.location.assign(window.location.origin)
+      }
+    } else {
+      window.location.assign(window.location.origin)
+    }
+  }
   
   function handleAuthLogin() {
     const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ''
@@ -191,6 +234,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   async function submitOrderAndWhatsApp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSavingOrder(true)
+    let ticketNumber = ''
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -208,7 +252,11 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           auth0_user_email: user?.email || null,
         }),
       })
-      await response.json()
+      const json = await response.json()
+      if (response.ok && json.order?.ticket_number) {
+        ticketNumber = json.order.ticket_number
+        setLastOrderTicket(ticketNumber)
+      }
     } catch {}
     try {
       await fetch('/api/profile', {
@@ -229,7 +277,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     setOrderSuccess(true)
 
     const productNames = cart.map((item) => `${item.product.title} x${item.quantity}`).join(', ')
-    const message = `Hola Elite, quiero realizar un pedido. Nombre: ${order.name}. Ciudad: ${order.city}. Cédula: ${order.id}. Teléfono: ${order.phone}. Cantidad total: ${order.quantity}. Productos: ${productNames}. Total estimado: ${formatPrice(String(subtotal), currency)}`
+    const message = `Hola Elite, quiero realizar un pedido. Número de pedido: ${ticketNumber || 'Pendiente'}. Nombre: ${order.name}. Ciudad: ${order.city}. Cédula: ${order.id}. Teléfono: ${order.phone}. Cantidad total: ${order.quantity}. Productos: ${productNames}. Total estimado: ${formatPrice(String(subtotal), currency)}. Puedes ver el estatus de este pedido con el ticket en mi perfil.`
     window.open(`https://wa.me/584129412247?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
     setCart([])
   }
@@ -256,8 +304,8 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         {isAuthenticated && user ? (
           <div className="hidden items-center gap-2 text-xs md:flex">
             <span className="rounded-full bg-secondary px-3 py-1.5 font-medium text-foreground">{user.name || user.email}</span>
-            <motion.button onClick={() => setProfileOpen(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-flex items-center gap-1.5 rounded-full bg-[#1197c5] px-3 py-1.5 font-semibold text-white shadow" title="Completar mi información de usuario"><UserRound className="size-3.5" /> Mi perfil</motion.button>
-            <button onClick={() => logout && logout({ logoutParams: { returnTo: window.location.origin } })} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" title="Cerrar sesión de Auth0"><LogOut className="size-4" /></button>
+            <motion.button onClick={openProfile} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-flex items-center gap-1.5 rounded-full bg-[#1197c5] px-3 py-1.5 font-semibold text-white shadow" title="Ver mi perfil y mis pedidos"><UserRound className="size-3.5" /> Mi perfil</motion.button>
+            <button onClick={handleLogout} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" title="Cerrar sesión"><LogOut className="size-4" /></button>
           </div>
         ) : (
           <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md md:inline-flex">
@@ -282,7 +330,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           {isAuthenticated && user ? (
             <div className="flex items-center justify-between border-t border-border pt-3">
               <span className="text-xs font-semibold text-primary">{user.name || user.email}</span>
-              <button onClick={() => logout && logout({ logoutParams: { returnTo: window.location.origin } })} className="text-xs text-destructive">Cerrar sesión</button>
+              <button onClick={handleLogout} className="text-xs text-destructive">Cerrar sesión</button>
             </div>
           ) : (
             <button onClick={handleAuthLogin} className="flex items-center gap-2 font-semibold text-[#1197c5]"><GoogleIcon className="size-4" /> Iniciar sesión con Gmail</button>
@@ -472,9 +520,47 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     <AnimatePresence>
       {profileOpen && <motion.div role="dialog" aria-modal="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-end justify-center bg-primary/40 p-4 md:items-center" onClick={() => setProfileOpen(false)}>
         <motion.form onSubmit={saveProfile} initial={{ scale: 0.9, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 24 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="w-full max-w-md rounded-3xl bg-background p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-          <div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Cuenta · {user?.email || 'Usuario'}</p><h2 className="text-2xl font-extrabold text-primary">Mi información</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setProfileOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
-          {profileSaved ? (
-            <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Información guardada!</p><p className="mt-2 text-sm text-muted-foreground">Tus datos quedaron registrados en el panel de Elite para futuros pedidos.</p><button type="button" onClick={() => { setProfileOpen(false); setProfileSaved(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
+          <div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Cuenta · {user?.email || 'Usuario'}</p><h2 className="text-2xl font-extrabold text-primary">Mi cuenta</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setProfileOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
+          <div className="mb-4 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+            <button type="button" onClick={() => setProfileView('info')} className={`flex-1 rounded-full px-3 py-2 transition-colors ${profileView === 'info' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground'}`}>Mi información</button>
+            <button type="button" onClick={() => setProfileView('orders')} className={`flex-1 rounded-full px-3 py-2 transition-colors ${profileView === 'orders' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground'}`}>Mis pedidos ({userOrders.length})</button>
+          </div>
+          {profileView === 'orders' ? (
+            <div className="flex max-h-[55vh] flex-col gap-2.5 overflow-y-auto pr-1">
+              {ordersLoading ? (
+                <p className="py-10 text-center text-sm text-muted-foreground">Cargando tus pedidos...</p>
+              ) : userOrders.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-4 py-10 text-center">
+                  <Package className="size-8 text-muted-foreground/60" />
+                  <p className="text-sm font-semibold">Aún no tienes pedidos</p>
+                  <p className="text-xs text-muted-foreground">Cuando confirmes una compra aparecerá aquí con su número de ticket y podrás ver su estatus.</p>
+                </div>
+              ) : (
+                userOrders.map((order) => {
+                  const statusMeta = getOrderStatusMeta(order.status)
+                  return (
+                    <div key={order.id} className="rounded-2xl border border-border p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="flex items-center gap-1.5 font-bold text-primary"><Ticket className="size-4 text-[#e30613]" /> {order.ticket_number || 'Sin ticket'}</p>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusMeta.badge}`}>{statusMeta.label}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString('es-VE')}</p>
+                      {Array.isArray(order.items) && order.items.length > 0 && (
+                        <div className="mt-2 flex flex-col gap-1">
+                          {order.items.slice(0, 3).map((item, index) => (
+                            <p key={index} className="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span className="truncate">{item.product?.title || 'Producto'}</span><span className="shrink-0 font-semibold">x{item.quantity ?? 1}</span></p>
+                          ))}
+                          {order.items.length > 3 && <p className="text-[11px] text-muted-foreground/70">+{order.items.length - 3} más</p>}
+                        </div>
+                      )}
+                      <p className="mt-2 border-t border-border pt-2 text-sm font-semibold text-primary">Total: {formatPrice(String(order.total_price || 0), order.currency)}</p>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          ) : profileSaved ? (
+            <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Información guardada!</p><p className="mt-2 text-sm text-muted-foreground">Tus datos quedaron registrados en el panel de Elite para futuros pedidos.</p><button type="button" onClick={() => { setProfileView('info'); setProfileSaved(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
           ) : (
             <>
               <div className="grid gap-3">
@@ -492,7 +578,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         <motion.form onSubmit={submitOrderAndWhatsApp} initial={{ scale: 0.9, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 24 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="w-full max-w-md rounded-3xl bg-background p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
           <div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e30613]">Pedido con tu cuenta</p><h2 className="text-2xl font-extrabold text-primary">Completa tus datos</h2></div><motion.button type="button" whileHover={{ rotate: 90 }} transition={spring} onClick={() => setOrderOpen(false)} aria-label="Cerrar formulario"><X className="size-5" /></motion.button></div>
           {orderSuccess ? (
-            <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Pedido registrado con éxito!</p><p className="mt-2 text-sm text-muted-foreground">Tus datos se han guardado en Supabase y se ha abierto WhatsApp para coordinar la entrega.</p><button type="button" onClick={() => { setOrderOpen(false); setOrderSuccess(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
+            <div className="py-8 text-center"><p className="font-serif text-2xl text-emerald-600">¡Pedido registrado con éxito!</p>{lastOrderTicket && <p className="mt-3 text-sm text-muted-foreground">Tu número de pedido es <strong className="text-[#e30613]">{lastOrderTicket}</strong>. Guárdalo para rastrear el estatus en <strong className="text-primary">Mi perfil → Mis pedidos</strong>.</p>}<p className="mt-3 text-sm text-muted-foreground">Se abrió WhatsApp para coordinar la entrega con el vendedor.</p><button type="button" onClick={() => { setOrderOpen(false); setOrderSuccess(false) }} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">Entendido</button></div>
           ) : (
             <>
               {user?.email && <p className="mb-3 text-xs text-muted-foreground">Autenticado como: <strong className="text-primary">{user.email}</strong></p>}

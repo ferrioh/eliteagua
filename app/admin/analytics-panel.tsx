@@ -5,19 +5,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, FileText, ShoppingBag, TrendingDown, TrendingUp, Users, Droplet } from 'lucide-react'
 import { formatPrice } from '@/lib/shopify'
-
-type OrderRow = {
-  id: string
-  created_at: string
-  customer_name: string
-  customer_city: string
-  customer_phone: string
-  quantity: number
-  total_price: number
-  currency: string
-  items: Array<{ product: { title: string }; quantity: number }>
-  auth0_user_email?: string
-}
+import type { OrderRow } from '@/lib/orders'
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ImagePlus, Images, Link2, LogOut, Package, Pencil, Plus, Share2, Trash2, Upload, UserRound, X } from 'lucide-react'
+import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, ClipboardList, ImagePlus, Images, Link2, LogOut, Package, Pencil, Plus, Share2, Trash2, Upload, UserRound, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/shopify'
 import type { CustomProductRow } from '@/lib/products'
@@ -11,28 +11,16 @@ import type { SlideRow } from '@/lib/slides'
 import type { SiteSettings } from '@/lib/settings'
 import { AnalyticsPanel } from './analytics-panel'
 import { UsersPanel } from './users-panel'
+import { OrdersPanel } from './orders-panel'
 import { processImageForUpload } from '@/lib/image-process'
-
-type OrderRow = {
-  id: string
-  created_at: string
-  customer_name: string
-  customer_city: string
-  customer_id_number: string
-  customer_phone: string
-  quantity: number
-  total_price: number
-  currency: string
-  items: Array<{ product: { title: string }; quantity: number }>
-  auth0_user_email?: string
-}
+import type { OrderRow } from '@/lib/orders'
 
 const emptyForm = { title: '', description: '', price: '', currency_code: 'USD', tags: '', product_type: 'Agua mineral', image_url: '' }
 const inputClass = 'rounded-xl border border-border bg-background px-4 py-3 outline-none ring-primary focus:ring-2'
 
 export function AdminDashboard({ email }: { email: string }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'catalog' | 'users' | 'analytics' | 'slides' | 'settings'>('catalog')
+  const [activeTab, setActiveTab] = useState<'catalog' | 'orders' | 'users' | 'analytics' | 'slides' | 'settings'>('catalog')
   const [products, setProducts] = useState<CustomProductRow[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [profiles, setProfiles] = useState<Array<{ id: string; created_at: string }>>([])
@@ -312,6 +300,7 @@ export function AdminDashboard({ email }: { email: string }) {
         {(
           [
             ['catalog', 'Catálogo de Productos', Package],
+            ['orders', `Pedidos (${orders.length})`, ClipboardList],
             ['users', `Usuarios (${profiles.length})`, UserRound],
             ['analytics', 'Ventas & Análisis', BarChart3],
             ['slides', 'Slider Inicio', Images],
@@ -376,6 +365,9 @@ export function AdminDashboard({ email }: { email: string }) {
 
       {/* TAB USERS: Usuarios con cuenta Gmail */}
       {activeTab === 'users' && <UsersPanel />}
+
+      {/* TAB ORDERS: Pedidos y estatus */}
+      {activeTab === 'orders' && <OrdersPanel orders={orders} onChange={loadOrders} />}
 
       {/* TAB 3: SALES & ANALYTICS DASHBOARD */}
       {activeTab === 'analytics' && <AnalyticsPanel orders={orders} />}

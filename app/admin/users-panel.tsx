@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AtSign, Building2, ChevronDown, Fingerprint, Mail, MapPin, Phone, UserRound, Users } from 'lucide-react'
+import { AtSign, Building2, ChevronDown, Fingerprint, Mail, MapPin, Package, Phone, UserRound, Users } from 'lucide-react'
+import { getOrderStatusMeta, type OrderRow } from '@/lib/orders'
 
 type ProfileRow = {
   id: string
@@ -19,6 +20,7 @@ type ProfileRow = {
 
 export function UsersPanel() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([])
+  const [orders, setOrders] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -31,6 +33,27 @@ export function UsersPanel() {
   }, [])
 
   useEffect(() => { loadProfiles() }, [loadProfiles])
+
+  const loadOrders = useCallback(() => {
+    fetch('/api/orders')
+      .then((response) => response.json())
+      .then((json) => setOrders(json.orders ?? []))
+      .catch(() => setOrders([]))
+  }, [])
+
+  useEffect(() => { loadOrders() }, [loadOrders])
+
+  const ordersByEmail = useMemo(() => {
+    const map = new Map<string, OrderRow[]>()
+    for (const order of orders) {
+      const email = order.auth0_user_email || ''
+      if (!email) continue
+      const list = map.get(email) ?? []
+      list.push(order)
+      map.set(email, list)
+    }
+    return map
+  }, [orders])
 
   return (
     <section className="rounded-2xl bg-background p-6 shadow-sm lg:p-8">
@@ -58,6 +81,8 @@ export function UsersPanel() {
         <div className="flex flex-col gap-2.5">
           {profiles.map((profile, index) => {
             const isOpen = openId === profile.id
+            const userOrders = ordersByEmail.get(profile.email) ?? []
+            const latestOrder = userOrders[0]
             return (
               <motion.div key={profile.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} className="overflow-hidden rounded-xl border border-border bg-background">
                 <button
@@ -72,6 +97,12 @@ export function UsersPanel() {
                     <span className="flex items-center gap-1 truncate text-xs text-muted-foreground"><Mail className="size-3 shrink-0" /> {profile.email || 'Sin correo'}</span>
                   </span>
                   <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">Registrado {new Date(profile.created_at).toLocaleDateString('es-VE')}</span>
+                  {userOrders.length > 0 && (
+                    <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground sm:inline-flex">
+                      <Package className="size-3.5 text-[#1197c5]" />
+                      {userOrders.length} pedido{userOrders.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
                   <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground"><ChevronDown className="size-4" /></motion.span>
                 </button>
                 <AnimatePresence initial={false}>
@@ -84,6 +115,23 @@ export function UsersPanel() {
                         {profile.id_number && <p className="flex items-center gap-2"><Fingerprint className="size-3.5 shrink-0 text-[#1197c5]" /> Cédula: {profile.id_number}</p>}
                         {profile.auth0_user_id && <p className="flex items-center gap-2 truncate"><AtSign className="size-3.5 shrink-0 text-muted-foreground/60" /> <span className="truncate" title={profile.auth0_user_id}>{profile.auth0_user_id}</span></p>}
                         <p className="flex items-center gap-2 sm:col-span-2"><Mail className="size-3.5 shrink-0 text-muted-foreground/60" /> Actualizado: {new Date(profile.updated_at).toLocaleDateString('es-VE')}</p>
+                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><Package className="size-3.5 shrink-0 text-[#1197c5]" /> Pedidos realizados ({userOrders.length})</p>
+                          {userOrders.length === 0 ? (
+                            <p className="text-xs text-muted-foreground/70">Este usuario aún no ha realizado pedidos.</p>
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              {latestOrder && (
+                                <p className="flex flex-wrap items-center gap-2 text-sm">
+                                  <span className="font-bold text-primary">{latestOrder.ticket_number || 'Sin ticket'}</span>
+                                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${getOrderStatusMeta(latestOrder.status).badge}`}>{getOrderStatusMeta(latestOrder.status).label}</span>
+                                  <span className="text-xs text-muted-foreground">· {new Date(latestOrder.created_at).toLocaleDateString('es-VE')}</span>
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground">Toca el ticket en la pestaña «Pedidos» para cambiar su estatus.</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   )}

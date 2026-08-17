@@ -185,3 +185,29 @@ create policy "Public update profiles" on public.user_profiles
 drop policy if exists "Authenticated delete profiles" on public.user_profiles;
 create policy "Authenticated delete profiles" on public.user_profiles
   for delete using (auth.role() = 'authenticated');
+
+-- 9. Ticket de pedido y estatus (registrada / en proceso / pagado)
+alter table public.orders add column if not exists ticket_number text;
+alter table public.orders alter column status set default 'registrada';
+
+-- 10. Secuencia interna para generar tickets consecutivos (ELITE-0001, ELITE-0002, ...)
+create table if not exists public.order_sequence (
+  id int primary key,
+  value bigint not null default 0
+);
+
+insert into public.order_sequence (id, value) values (1, 0)
+on conflict (id) do nothing;
+
+-- 11. Función atómica que devuelve el siguiente número de ticket
+create or replace function public.increment_order_sequence()
+returns bigint
+language sql
+volatile
+security definer
+set search_path = public
+as $$
+  update public.order_sequence set value = value + 1 where id = 1 returning value;
+$$;
+
+grant execute on function public.increment_order_sequence() to anon, authenticated;
