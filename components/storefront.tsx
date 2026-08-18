@@ -213,9 +213,30 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
     setProfileView('info')
     if (!user?.email) return
     setOrdersLoading(true)
-    fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
-      .then((response) => response.json())
-      .then((json) => setUserOrders(Array.isArray(json.orders) ? json.orders : []))
+    Promise.all([
+      fetch(`/api/orders?email=${encodeURIComponent(user.email)}`).then((response) => response.json()),
+      fetch(`/api/profile?email=${encodeURIComponent(user.email)}`).then((response) => response.json()),
+    ])
+      .then(([ordersJson, profileJson]) => {
+        setUserOrders(Array.isArray(ordersJson.orders) ? ordersJson.orders : [])
+        const saved = Array.isArray(profileJson.profiles) ? profileJson.profiles[0] : null
+        if (saved) {
+          setProfile({
+            full_name: saved.full_name || user.name || '',
+            phone: saved.phone || '',
+            city: saved.city || '',
+            address: saved.address || '',
+            id_number: saved.id_number || '',
+          })
+          setOrder((prev) => ({
+            ...prev,
+            name: prev.name || saved.full_name || user.name || '',
+            city: prev.city || saved.city || '',
+            id: prev.id || saved.id_number || '',
+            phone: prev.phone || saved.phone || '',
+          }))
+        }
+      })
       .catch(() => setUserOrders([]))
       .finally(() => setOrdersLoading(false))
   }
@@ -360,10 +381,13 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             <button onClick={handleLogout} className="rounded-full p-1.5 text-muted-foreground hover:text-destructive" title="Cerrar sesión"><LogOut className="size-4" /></button>
           </div>
         ) : (
-          <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:inline-flex">
-            <span className="grid size-6 place-items-center rounded-full bg-white shadow ring-1 ring-black/5"><GoogleIcon className="size-3.5" /></span>
-            <span className="relative"><span className="absolute inset-0 origin-left rounded-full bg-[#1197c5]/15 blur-[2px]" />Iniciar con Gmail</span>
-          </motion.button>
+          <>
+            <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }} transition={spring} aria-label="Iniciar sesión con Google" className="grid size-9 place-items-center rounded-full border border-[#1197c5]/30 bg-white/80 shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:hidden"><GoogleIcon className="size-5" /></motion.button>
+            <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:inline-flex">
+              <span className="grid size-6 place-items-center rounded-full bg-white shadow ring-1 ring-black/5"><GoogleIcon className="size-3.5" /></span>
+              <span className="relative"><span className="absolute inset-0 origin-left rounded-full bg-[#1197c5]/15 blur-[2px]" />Iniciar con Gmail</span>
+            </motion.button>
+          </>
         )}
         <ThemeToggle className="rounded-full border border-border bg-background/60 backdrop-blur" />
         <motion.button onClick={() => setCartOpen(true)} whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.92 }} className="flex items-center gap-2 text-sm font-medium" aria-label="Abrir cesta">
@@ -697,7 +721,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             <div className="border-t border-border p-5">
               <div className="mb-4 flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><strong>{formatPrice(subtotal.toFixed(2), currency)}</strong></div>
               <div className="mb-3 rounded-xl bg-[#1197c5]/10 p-3 text-xs text-[#1197c5]">
-                {isAuthenticated ? '✓ Con tu cuenta Gmail puedes proceder con la compra' : '🔒 Debes estar registrado o iniciar sesión para procesar la compra'}
+                {isAuthenticated ? 'Con tu cuenta Gmail puedes proceder con la compra' : '🔒 Debes estar registrado o iniciar sesión para procesar la compra'}
               </div>
               <motion.button onClick={checkout} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} className="flex w-full items-center justify-center gap-2 bg-[#e30613] px-5 py-4 text-sm font-bold text-white shadow-lg">Proceder a Comprar {isAuthenticated ? <ArrowRight className="size-4" /> : <LogIn className="size-4" />}</motion.button>
             </div>

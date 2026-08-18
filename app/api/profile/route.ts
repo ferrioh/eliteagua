@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ profiles: [] })
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .order('updated_at', { ascending: false })
+  const url = new URL(request.url)
+  const email = url.searchParams.get('email')
+
+  let query = supabase.from('user_profiles').select('*').order('updated_at', { ascending: false })
+  if (email) query = query.eq('email', email)
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ profiles: data })
 }
