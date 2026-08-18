@@ -27,6 +27,9 @@ function XLogoIcon({ className }: { className?: string }) {
 function GoogleIcon({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.5 5.5 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" /><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" /><path fill="#FBBC05" d="M5.27 14.29A7 7 0 0 1 4.89 12c0-.79.14-1.57.38-2.29V6.62H1.29A11.86 11.86 0 0 0 0 12c0 1.94.47 3.76 1.29 5.38l3.98-3.09z" /><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42A11.9 11.9 0 0 0 12 0C7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z" /></svg>
 }
+function GeminiIcon({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M12 0C11.72 7.12 7.12 11.72 0 12c7.12.28 11.72 4.88 12 12 .28-7.12 4.88-11.72 12-12-7.12-.28-11.72-4.88-12-12Z" /></svg>
+}
 const fallbackProducts: ShopifyProduct[] = [
   { id: 'elite-600', handle: 'elite-600ml', title: 'Elite 600 ML', description: 'Caja de 16 unidades. Agua mineral Elite en formato práctico para llevar contigo.', productType: 'Agua mineral', tags: ['600 ML', 'Caja 16 unidades'], featuredImage: { url: '/elite-600ml-white.png', altText: 'Caja de agua Elite de 600 mililitros' }, priceRange: { minVariantPrice: { amount: '12.00', currencyCode: 'USD' } }, variants: { nodes: [{ id: 'elite-v600', availableForSale: true }] } },
   { id: 'elite-1500', handle: 'elite-1500ml', title: 'Elite 1.5 L', description: 'Caja de 12 unidades. El formato ideal para compartir en casa o en la oficina.', productType: 'Agua mineral', tags: ['1.5 L', 'Caja 12 unidades'], featuredImage: { url: '/elite-1500ml-white.png', altText: 'Caja de agua Elite de 1.5 litros' }, priceRange: { minVariantPrice: { amount: '15.00', currencyCode: 'USD' } }, variants: { nodes: [{ id: 'elite-v1500', availableForSale: true }] } },
@@ -49,6 +52,53 @@ const originMetrics = [
   { label: 'Productividad', value: 1200, decimals: 0, suffix: '/min', icon: Activity, accent: '#e30613', progress: 0.88 },
   { label: 'Pureza', value: 99.7, decimals: 1, suffix: '%', icon: Sparkles, accent: '#ff6b7d', progress: 1 },
 ] as const
+
+const easeApple = [0.22, 1, 0.36, 1] as const
+
+function Reveal({ children, className, delay = 0, y = 26 }: { children: React.ReactNode; className?: string; delay?: number; y?: number }) {
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-70px' }}
+      transition={{ duration: 0.7, delay, ease: easeApple }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+const ASSISTANT_PHRASES = [
+  '¡Hola! ¿En qué te ayudo?',
+  '¿Sigues ahí? ¡Ven, pregúntame!',
+  'Resuelve tus dudas al instante, estoy aquí para ti',
+  '¿Qué agua buscas hoy? Te ayudo a elegir',
+  'Pregúntame lo que quieras, sin pena 😉',
+]
+
+function useTypewriter(phrases: string[], reduce: boolean | null) {
+  const [index, setIndex] = useState(0)
+  const [text, setText] = useState(() => (reduce ? phrases[0] : ''))
+
+  useEffect(() => {
+    if (reduce) return
+    const phrase = phrases[index]
+    let timer: number
+
+    if (text.length < phrase.length) {
+      timer = window.setTimeout(() => setText(phrase.slice(0, text.length + 1)), 42)
+    } else {
+      timer = window.setTimeout(() => {
+        setText('')
+        setIndex((i) => (i + 1) % phrases.length)
+      }, 2600)
+    }
+    return () => window.clearTimeout(timer)
+  }, [text, index, phrases, reduce])
+
+  return text
+}
 
 function TickerItem({ metric, reduce }: { metric: (typeof originMetrics)[number]; reduce: boolean | null }) {
   const Icon = metric.icon
@@ -79,6 +129,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   const [selected, setSelected] = useState<ShopifyProduct | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const reduce = useReducedMotion()
+  const bubbleText = useTypewriter(ASSISTANT_PHRASES, reduce)
   
   const { isAuthenticated = true, user, loginWithRedirect, logout } = useAuth0()
 
@@ -330,10 +381,13 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         {mobileMenu && <motion.nav initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: 'easeInOut' }} className="flex flex-col gap-5 overflow-hidden border-t border-border pt-5 mt-4 text-sm md:hidden">
           {[['#catalogo', 'Catálogo'], ['#origen', 'Nuestro origen'], ['#contacto', 'Contactos']].map(([href, label]) => <motion.a key={href} href={href} whileTap={{ scale: 0.97, x: 4 }} onClick={() => setMobileMenu(false)}>{label}</motion.a>)}
           {isAuthenticated && user ? (
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              <span className="text-xs font-semibold text-primary">{user.name || user.email}</span>
-              <button onClick={handleLogout} className="text-xs text-destructive">Cerrar sesión</button>
-            </div>
+            <>
+              <div className="flex items-center justify-between border-t border-border pt-3">
+                <span className="flex items-center gap-2 text-xs font-semibold text-primary"><UserRound className="size-4 text-[#1197c5]" /> {user.name || user.email}</span>
+                <button onClick={handleLogout} className="text-xs text-destructive">Cerrar sesión</button>
+              </div>
+              <motion.button whileTap={{ scale: 0.97, x: 4 }} onClick={() => { openProfile(); setMobileMenu(false) }} className="flex items-center gap-2 text-left font-semibold text-[#1197c5]"><UserRound className="size-4" /> Mi perfil y mis pedidos</motion.button>
+            </>
           ) : (
             <button onClick={handleAuthLogin} className="flex items-center gap-2 font-semibold text-[#1197c5]"><GoogleIcon className="size-4" /> Iniciar sesión con Gmail</button>
           )}
@@ -366,20 +420,35 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
             </motion.div>
           </div>
         </div>
-        <div className="pointer-events-auto hidden shrink-0 items-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-4 py-2 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl sm:flex" role="tablist" aria-label="Progreso de las diapositivas">
-          {slides.map((_, index) => <button key={index} role="tab" aria-selected={slide === index} aria-label={`Ir al slide ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${slide === index ? 'w-8 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />)}
+        <div className="pointer-events-auto hidden shrink-0 items-center gap-2 rounded-full border border-white/30 bg-white/20 px-3.5 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl sm:flex" role="tablist" aria-label="Progreso de las diapositivas">
+          {slides.map((_, index) => <button key={index} role="tab" aria-selected={slide === index} aria-label={`Ir al slide ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${slide === index ? 'w-7 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />)}
         </div>
       </div>
 
-      <motion.div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-white/40 bg-white/20 px-4 py-2 shadow-lg shadow-[#0a4566]/15 backdrop-blur-xl dark:border-white/30 dark:bg-white/10 sm:bottom-8 sm:gap-4 sm:px-5" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 22 }}>
-        <span className="block text-center text-xl font-bold tracking-[0.2em] tabular-nums sm:text-2xl">
+      <motion.div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5 rounded-full border border-white/40 bg-white/25 px-3 py-1.5 shadow-lg shadow-[#0a4566]/15 backdrop-blur-xl dark:border-white/30 dark:bg-white/10 sm:bottom-7 sm:gap-3 sm:px-3.5" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 22 }}>
+        <span className="block text-sm font-bold tracking-[0.18em] tabular-nums sm:text-base">
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span key={slide} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 26 }} className="inline-block">{String(slide + 1).padStart(2, '0')}</motion.span>
+            <motion.span key={slide} initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -14, opacity: 0 }} transition={{ type: 'spring', stiffness: 340, damping: 28 }} className="inline-block">{String(slide + 1).padStart(2, '0')}</motion.span>
           </AnimatePresence>
-          <span className="mx-1.5 font-light text-white/60">/</span>{String(slides.length).padStart(2, '0')}
+          <span className="mx-1 font-light text-white/60">/</span>{String(slides.length).padStart(2, '0')}
         </span>
-        <span className="h-5 w-px bg-white/40" />
-        <span className="flex gap-1.5">{slides.map((_, index) => <motion.span key={index} animate={{ scale: slide === index ? 1.35 : 1, opacity: slide === index ? 1 : 0.45 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }} className={`size-1.5 rounded-full ${slide === index ? 'bg-white' : 'bg-white/70'}`} />)}</span>
+        <span className="h-4 w-px bg-white/40" />
+        <span className="flex items-center gap-1.5">
+          {slides.map((_, index) => {
+            const active = slide === index
+            return (
+              <button key={index} role="tab" aria-selected={active} aria-label={`Ir al slide ${index + 1}`} onClick={() => setSlide(index)} className="flex h-2 cursor-pointer items-center">
+                {active ? (
+                  <span className="relative flex h-1.5 w-7 overflow-hidden rounded-full bg-white/30">
+                    <motion.span key={slide} className="h-full rounded-full bg-white" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 4, ease: 'linear' }} />
+                  </span>
+                ) : (
+                  <motion.span animate={{ scale: 1, opacity: 0.5 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }} className="block size-1.5 rounded-full bg-white transition-colors hover:bg-white/90" />
+                )}
+              </button>
+            )
+          })}
+        </span>
       </motion.div>
     </div></section>
     <section id="catalogo" className="relative mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-20">
@@ -401,7 +470,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           <div className="flex gap-1 rounded-full border border-[#1197c5]/20 bg-white/70 p-1 shadow-sm backdrop-blur-md dark:bg-white/10" aria-label="Cambiar distribución">{['grid', 'list'].map((mode) => <motion.button key={mode} aria-label={mode === 'grid' ? 'Vista en cuadrícula' : 'Vista en lista'} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.85 }} className={`rounded-full p-2 transition-colors ${view === mode ? 'bg-[#1197c5] text-white shadow' : 'text-muted-foreground'}`} onClick={() => setView(mode as 'grid' | 'list')}>{mode === 'grid' ? <Grid2X2 className="size-4" /> : <List className="size-4" />}</motion.button>)}</div>
         </div>
       </motion.div>
-      <motion.div variants={staggerContainer} initial="hidden" animate="show" className={view === 'grid' ? 'grid grid-cols-2 gap-x-4 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-16' : 'flex flex-col gap-4'}>
+      <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} className={view === 'grid' ? 'grid grid-cols-2 gap-x-4 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-16' : 'flex flex-col gap-4'}>
         {filtered.map((product) => <motion.article key={product.id} layout variants={cardVariants} whileHover={view === 'grid' ? { y: -12 } : { x: 8 }} whileTap={{ scale: 0.98 }} transition={spring} className={view === 'grid' ? 'group relative cursor-pointer rounded-[2rem] border border-white/70 bg-white/55 p-3 shadow-lg shadow-[#1197c5]/10 backdrop-blur-xl transition-shadow duration-300 hover:shadow-2xl hover:shadow-[#1197c5]/25' : 'flex cursor-pointer items-center gap-4 rounded-[1.6rem] border border-white/70 bg-white/60 p-4 shadow-md shadow-[#1197c5]/5 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-[#1197c5]/15'} onClick={() => setSelected(product)}>
           <div className={view === 'grid' ? 'relative mb-4 aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-gradient-to-b from-[#dff6ff] via-[#eafaff] to-[#f7feff] shadow-inner transition-shadow duration-300 group-hover:shadow-xl' : 'relative size-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-[#dff6ff] to-[#f7feff] sm:size-24'}>
             <motion.span className="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-[#1197c5]/15 blur-2xl" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} />
@@ -423,15 +492,17 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(86,199,242,0.3),transparent_45%),radial-gradient(circle_at_88%_50%,rgba(227,6,19,0.1),transparent_45%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#1197c5]/40 to-transparent" aria-hidden="true" />
-      <div className="relative flex items-center gap-4 overflow-hidden">
-        <div className="z-10 flex shrink-0 items-center gap-2.5 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
-          <span className="relative flex size-2"><motion.span className="absolute inline-flex size-full rounded-full bg-[#e30613]" animate={{ scale: [1, 2.4], opacity: [0.8, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-2 rounded-full bg-[#e30613]" /></span>
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e7fb5] dark:text-white">Analítica Elite</span>
+      <Reveal>
+        <div className="relative flex items-center gap-4 overflow-hidden">
+          <div className="z-10 flex shrink-0 items-center gap-2.5 rounded-full border border-white/60 bg-white/25 dark:border-white/20 dark:bg-white/10 px-4 py-1.5 shadow-lg shadow-[#0a4566]/10 backdrop-blur-xl">
+            <span className="relative flex size-2"><motion.span className="absolute inline-flex size-full rounded-full bg-[#e30613]" animate={{ scale: [1, 2.4], opacity: [0.8, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} /><span className="relative inline-flex size-2 rounded-full bg-[#e30613]" /></span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e7fb5] dark:text-white">Analítica Elite</span>
+          </div>
+          <motion.div className="flex shrink-0 items-center gap-3 pr-4" animate={reduce ? undefined : { x: ['0%', '-50%'] }} transition={{ duration: 34, repeat: Infinity, ease: 'linear' }}>
+            {[...originMetrics, ...originMetrics].map((metric, i) => <TickerItem key={i} metric={metric} reduce={reduce} />)}
+          </motion.div>
         </div>
-        <motion.div className="flex shrink-0 items-center gap-3 pr-4" animate={reduce ? undefined : { x: ['0%', '-50%'] }} transition={{ duration: 34, repeat: Infinity, ease: 'linear' }}>
-          {[...originMetrics, ...originMetrics].map((metric, i) => <TickerItem key={i} metric={metric} reduce={reduce} />)}
-        </motion.div>
-      </div>
+      </Reveal>
     </div>
     <motion.section id="origen" className="relative overflow-hidden border-b border-border bg-gradient-to-b from-[#eafaff] via-[#dff4ff] to-[#f4fcff] px-5 py-12 dark:from-[#0a2430] dark:via-[#0d2b3a] dark:to-[#081d27] md:py-16" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}>
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
@@ -472,7 +543,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         </motion.div>
       </motion.div>
     </div></section>
-    <footer className="bg-primary px-5 py-10 text-primary-foreground md:px-10"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
+    <footer className="bg-primary px-5 py-10 text-primary-foreground md:px-10"><Reveal><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
       <motion.a href="#inicio" className="flex items-center gap-2 font-serif text-xl font-semibold tracking-tight" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
         <img src="/elite-logo.jpg" alt="Elite" className="size-9 rounded-full object-cover" />
         <span>elite</span>
@@ -483,14 +554,17 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           return url ? <motion.a key={key as string} href={url} target="_blank" rel="noopener noreferrer" aria-label={label as string} whileHover={{ y: -4, scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring} className="grid size-11 place-items-center rounded-full bg-white/10 transition-colors hover:bg-[#e30613]"><Icon className="size-5" /></motion.a> : <span key={key as string} className="grid size-11 place-items-center rounded-full bg-white/10 text-primary-foreground/30" aria-hidden="true"><Icon className="size-5" /></span>
         })}
       </div>
-      <p className="text-xs text-primary-foreground/70">© {new Date().getFullYear()} Agua Elite · Todos los derechos reservados</p>
+      <div className="flex flex-col items-center gap-1.5 md:items-end">
+        <p className="text-xs text-primary-foreground/70">© {new Date().getFullYear()} Agua Elite · Todos los derechos reservados</p>
+        <p className="text-xs text-primary-foreground/70">Desarrollada por <a href="https://www.instagram.com/ferriohtv" target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-primary-foreground/40 underline-offset-2 transition-colors hover:decoration-primary-foreground">Fernando Centeno</a></p>
+      </div>
     </div>
-      <motion.a href="/admin/login" whileHover={{ opacity: 1 }} className="mt-6 inline-block text-center text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 opacity-80 transition-opacity hover:text-primary-foreground/80">Acceso administrativo</motion.a>
-    </footer>
+    </Reveal></footer>
     <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md items-center justify-around border-t border-border bg-background/95 px-4 py-3 text-[10px] font-semibold text-muted-foreground shadow-[0_-8px_24px_rgba(8,45,100,.08)] backdrop-blur md:hidden" aria-label="Navegación principal">
       <motion.a href="#inicio" className="flex flex-col items-center gap-1 text-primary" whileTap={{ scale: 0.9 }}><Droplets className="size-5" /> Inicio</motion.a>
       <motion.a href="#catalogo" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Grid2X2 className="size-5" /> Tienda</motion.a>
       <motion.button onClick={() => setCartOpen(true)} whileTap={{ scale: 0.9 }} className="relative flex flex-col items-center gap-1"><ShoppingBag className="size-5" /> Cesta{count > 0 && <AnimatePresence initial={false}><motion.span key={count} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }} className="absolute -right-2 -top-1 grid size-4 place-items-center rounded-full bg-[#e30613] text-[9px] text-white">{count}</motion.span></AnimatePresence>}</motion.button>
+      {isAuthenticated && user ? <motion.button onClick={openProfile} whileTap={{ scale: 0.9 }} className="flex flex-col items-center gap-1"><UserRound className="size-5" /> Perfil</motion.button> : null}
       <motion.a href="#contacto" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Mail className="size-5" /> Contacto</motion.a>
     </nav>
     <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} drag dragMomentum={false} dragElastic={0.1} onDrag={(_event, info) => setFabPos({ x: info.offset.x, y: info.offset.y })} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} className="fixed bottom-24 right-3 z-20 grid size-14 touch-none cursor-grab place-items-center rounded-full bg-[#1197c5] text-white shadow-xl active:cursor-grabbing">
@@ -498,14 +572,14 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0], y: [0, -6, 0] }} transition={{ rotate: { duration: 2.5, repeat: Infinity, repeatDelay: 1 }, y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}><Droplets className="size-7" /></motion.span>
     </motion.button>
     {!chatOpen && (
-      <motion.div
-        initial={{ opacity: 0, y: 8, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        style={{ x: fabPos.x, y: fabPos.y }}
-        className="pointer-events-none fixed bottom-24 right-[4.75rem] z-20 flex items-center gap-2 rounded-2xl rounded-br-md border border-[#1197c5]/20 bg-background px-3.5 py-2 text-xs font-semibold text-primary shadow-lg"
-      >
-        <motion.img src="/elite-logo.jpg" alt="Asistente Elite" className="size-5 rounded-full object-cover" animate={{ y: [0, -2, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} />
-        ¡Hola! ¿En qué te ayudo?
+      <motion.div style={{ x: fabPos.x, y: fabPos.y }} className="pointer-events-none fixed bottom-24 right-[4.75rem] z-20">
+        <motion.div initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="flex max-w-[230px] items-start gap-2 rounded-2xl rounded-br-md border border-[#1197c5]/20 bg-background px-3.5 py-2.5 text-xs font-semibold text-primary shadow-lg">
+          <motion.img src="/elite-logo.jpg" alt="Asistente Elite" className="mt-0.5 size-5 shrink-0 rounded-full object-cover" animate={{ y: [0, -2, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} />
+          <span className="min-w-0 leading-5">
+            {bubbleText}
+            <motion.span className="ml-0.5 inline-block h-3.5 w-px translate-y-0.5 bg-[#1197c5] align-middle" animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+          </span>
+        </motion.div>
       </motion.div>
     )}
     <AnimatePresence>
@@ -524,6 +598,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
         </div>
         <div className="flex max-h-56 flex-col gap-3 overflow-y-auto p-4"><AnimatePresence initial={false}>{messages.map((message: { id: string; role: string; parts: Array<{ type: string; text?: string }> }) => <motion.p key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 350, damping: 28 }} className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-5 ${message.role === 'user' ? 'ml-auto rounded-[1.2rem] rounded-br-md bg-secondary text-foreground' : 'rounded-[1.2rem] rounded-bl-md border border-border bg-muted'}`}>{message.parts.filter((part) => part.type === 'text').map((part) => part.type === 'text' ? part.text : '').join('')}</motion.p>)}</AnimatePresence></div>
         <div className="flex gap-2 border-t border-border bg-background p-3"><form onSubmit={askAssistant} className="flex min-w-0 flex-1 gap-2 rounded-full border border-border bg-background py-1 pl-4 pr-1"><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Escribe tu pregunta" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /><motion.button type="submit" whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.85 }} disabled={status === 'streaming' || status === 'submitted'} aria-label="Enviar pregunta" className="grid size-9 shrink-0 place-items-center rounded-full bg-[#1197c5] text-white disabled:opacity-50"><Send className="size-4" /></motion.button></form></div>
+        <div className="flex items-center justify-center gap-1.5 border-t border-border/60 bg-background/80 py-2 text-[10px] font-medium tracking-wide text-muted-foreground"><GeminiIcon className="size-3.5 text-[#8b5cf6]" /> Tecnología Google Gemini</div>
       </motion.section>}
     </AnimatePresence>
     <AnimatePresence>
