@@ -69,37 +69,6 @@ function Reveal({ children, className, delay = 0, y = 26 }: { children: React.Re
   )
 }
 
-const ASSISTANT_PHRASES = [
-  '¡Hola! ¿En qué te ayudo?',
-  '¿Sigues ahí? ¡Ven, pregúntame!',
-  'Resuelve tus dudas al instante, estoy aquí para ti',
-  '¿Qué agua buscas hoy? Te ayudo a elegir',
-  'Pregúntame lo que quieras, sin pena 😉',
-]
-
-function useTypewriter(phrases: string[], reduce: boolean | null) {
-  const [index, setIndex] = useState(0)
-  const [text, setText] = useState(() => (reduce ? phrases[0] : ''))
-
-  useEffect(() => {
-    if (reduce) return
-    const phrase = phrases[index]
-    let timer: number
-
-    if (text.length < phrase.length) {
-      timer = window.setTimeout(() => setText(phrase.slice(0, text.length + 1)), 42)
-    } else {
-      timer = window.setTimeout(() => {
-        setText('')
-        setIndex((i) => (i + 1) % phrases.length)
-      }, 2600)
-    }
-    return () => window.clearTimeout(timer)
-  }, [text, index, phrases, reduce])
-
-  return text
-}
-
 function TickerItem({ metric, reduce }: { metric: (typeof originMetrics)[number]; reduce: boolean | null }) {
   const Icon = metric.icon
   const dots = 5
@@ -129,7 +98,6 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   const [selected, setSelected] = useState<ShopifyProduct | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const reduce = useReducedMotion()
-  const bubbleText = useTypewriter(ASSISTANT_PHRASES, reduce)
   
   const { isAuthenticated = true, user, loginWithRedirect, logout } = useAuth0()
 
@@ -161,7 +129,6 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
   useEffect(() => { const timer = window.setInterval(() => setSlide((value) => (value + 1) % slides.length), 4000); return () => window.clearInterval(timer) }, [slides.length])
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [chatOpen, setChatOpen] = useState(false)
-  const [fabPos, setFabPos] = useState({ x: 0, y: 0 })
   const [question, setQuestion] = useState('')
   const { messages, sendMessage, status } = useChat()
   const catalog = products.length ? products : fallbackProducts
@@ -382,7 +349,7 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
           </div>
         ) : (
           <>
-            <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }} transition={spring} aria-label="Iniciar sesión con Google" className="grid size-9 place-items-center rounded-full border border-[#1197c5]/30 bg-white/80 shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:hidden"><GoogleIcon className="size-5" /></motion.button>
+            <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }} transition={spring} aria-label="Registrarse o iniciar sesión con Google" className="flex items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:hidden"><GoogleIcon className="size-5" /> Registrarse o iniciar sesión</motion.button>
             <motion.button onClick={handleAuthLogin} whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(17,151,197,0.35)' }} whileTap={{ scale: 0.94 }} transition={spring} className="group hidden items-center gap-2 rounded-full border border-[#1197c5]/30 bg-white/80 py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#1197c5] shadow-sm backdrop-blur-md dark:border-[#1197c5]/40 dark:bg-white/10 md:inline-flex">
               <span className="grid size-6 place-items-center rounded-full bg-white shadow ring-1 ring-black/5"><GoogleIcon className="size-3.5" /></span>
               <span className="relative"><span className="absolute inset-0 origin-left rounded-full bg-[#1197c5]/15 blur-[2px]" />Iniciar con Gmail</span>
@@ -591,21 +558,10 @@ export function Storefront({ products, slides: initialSlides, settings }: Props)
       {isAuthenticated && user ? <motion.button onClick={openProfile} whileTap={{ scale: 0.9 }} className="flex flex-col items-center gap-1"><UserRound className="size-5" /> Perfil</motion.button> : null}
       <motion.a href="#contacto" className="flex flex-col items-center gap-1" whileTap={{ scale: 0.9 }}><Mail className="size-5" /> Contacto</motion.a>
     </nav>
-    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} drag dragMomentum={false} dragElastic={0.1} onDrag={(_event, info) => setFabPos({ x: info.offset.x, y: info.offset.y })} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} className="fixed bottom-24 right-3 z-20 grid size-14 touch-none cursor-grab place-items-center rounded-full bg-[#1197c5] text-white shadow-xl active:cursor-grabbing">
+    <motion.button aria-label="Abrir asistente" onClick={() => setChatOpen(!chatOpen)} whileHover={{ scale: 1.18 }} whileTap={{ scale: 0.85 }} className="fixed bottom-24 right-3 z-20 grid size-14 touch-none cursor-grab place-items-center rounded-full bg-[#1197c5] text-white shadow-xl active:cursor-grabbing">
       <motion.span className="absolute inset-0 rounded-full bg-[#1197c5]/40" animate={{ scale: [1, 1.45], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
       <motion.span className="relative grid place-items-center" animate={{ rotate: [0, -8, 8, 0], y: [0, -6, 0] }} transition={{ rotate: { duration: 2.5, repeat: Infinity, repeatDelay: 1 }, y: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}><Droplets className="size-7" /></motion.span>
     </motion.button>
-    {!chatOpen && (
-      <motion.div style={{ x: fabPos.x, y: fabPos.y }} className="pointer-events-none fixed bottom-24 right-[4.75rem] z-20">
-        <motion.div initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} className="flex max-w-[230px] items-start gap-2 rounded-2xl rounded-br-md border border-[#1197c5]/20 bg-background px-3.5 py-2.5 text-xs font-semibold text-primary shadow-lg">
-          <motion.img src="/elite-logo.jpg" alt="Asistente Elite" className="mt-0.5 size-5 shrink-0 rounded-full object-cover" animate={{ y: [0, -2, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} />
-          <span className="min-w-0 leading-5">
-            {bubbleText}
-            <motion.span className="ml-0.5 inline-block h-3.5 w-px translate-y-0.5 bg-[#1197c5] align-middle" animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
-          </span>
-        </motion.div>
-      </motion.div>
-    )}
     <AnimatePresence>
       {chatOpen && <motion.section initial={{ opacity: 0, y: 32, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 32, scale: 0.92 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} className="fixed bottom-32 right-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-[2rem] border border-primary/10 bg-background shadow-[0_24px_70px_rgba(8,45,100,.28)]" aria-label="Asistente de manantial">
         <div className="relative overflow-hidden bg-gradient-to-br from-[#1197c5] via-[#0e7fb5] to-primary p-5 pb-7 text-primary-foreground">
